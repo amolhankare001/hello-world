@@ -11,6 +11,7 @@ php artisan migrate:fresh --seed
 ```
 
 The development credentials in `.env.example` are intentionally local-only. Never reuse them in a shared or production environment.
+The development seeder expects an empty database; do not reset or reseed a database that contains data you need to preserve.
 
 ## SQLite for tests
 

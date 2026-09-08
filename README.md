@@ -25,6 +25,9 @@ npm run build
 php artisan serve
 ```
 
+Run the migration and development seeder against an empty database. Re-running
+the seeder on an existing demo dataset can violate unique fixture constraints.
+
 All seeded development accounts use the password `password`:
 
 | Role | Email |
