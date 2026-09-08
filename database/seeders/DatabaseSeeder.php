@@ -9,6 +9,7 @@ use App\Models\Badge;
 use App\Models\Division;
 use App\Models\HolisticDomain;
 use App\Models\Mentor;
+use App\Models\Question;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -17,6 +18,7 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentMentorAssignment;
 use App\Models\Subject;
+use App\Models\Test;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -170,6 +172,7 @@ class DatabaseSeeder extends Seeder
                 ['WORD_PROBLEMS', 'Word problems', 'शब्दसमस्या'],
             ]);
             $this->createDemoPracticeContent($platformAdministrator);
+            $this->createDemoAssessments($school, $academicYear, $schoolClass, $platformAdministrator);
 
             Badge::query()->create([
                 'code' => 'FIRST_STEP',
@@ -388,6 +391,56 @@ class DatabaseSeeder extends Seeder
                 'marks' => 1,
                 'is_active' => true,
             ]);
+        }
+    }
+
+    private function createDemoAssessments(
+        School $school,
+        AcademicYear $academicYear,
+        SchoolClass $schoolClass,
+        User $creator,
+    ): void {
+        $assessmentDefinitions = [
+            ['MARATHI', 'VOWELS', 'MARATHI_PRE_1', 'pre_test', 'Marathi vowel baseline', 'मराठी स्वर पूर्व चाचणी'],
+            ['MATHEMATICS', 'ADDITION', 'MATH_ADDITION_PRE_1', 'pre_test', 'Addition baseline', 'बेरीज पूर्व चाचणी'],
+            ['MATHEMATICS', 'ADDITION', 'MATH_ADDITION_POST_1', 'post_test', 'Addition post-test', 'बेरीज उत्तर चाचणी'],
+        ];
+
+        foreach ($assessmentDefinitions as [$subjectCode, $skillCode, $code, $type, $title, $titleMarathi]) {
+            $subject = Subject::query()->where('code', $subjectCode)->firstOrFail();
+            $skill = Skill::query()->whereBelongsTo($subject)->where('code', $skillCode)->firstOrFail();
+            $questions = Question::query()
+                ->whereBelongsTo($skill)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->limit(3)
+                ->get();
+            $test = Test::query()->create([
+                'school_id' => $school->id,
+                'academic_year_id' => $academicYear->id,
+                'school_class_id' => $schoolClass->id,
+                'subject_id' => $subject->id,
+                'created_by' => $creator->id,
+                'code' => $code,
+                'type' => $type,
+                'title' => $title,
+                'title_marathi' => $titleMarathi,
+                'instructions' => 'Answer every question without help.',
+                'instructions_marathi' => 'मदतीशिवाय प्रत्येक प्रश्न सोडवा.',
+                'duration_minutes' => 15,
+                'difficulty' => 1,
+                'question_count' => $questions->count(),
+                'max_attempts' => 1,
+                'passing_score' => 60,
+                'shuffle_questions' => false,
+                'status' => 'published',
+            ]);
+            $test->questions()->attach($questions->mapWithKeys(
+                fn (Question $question, int $index): array => [$question->id => [
+                    'sort_order' => $index + 1,
+                    'marks' => $question->marks,
+                ]],
+            ));
         }
     }
 }

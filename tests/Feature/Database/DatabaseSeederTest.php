@@ -17,6 +17,7 @@ use App\Models\StudentEnrollment;
 use App\Models\StudentMentorAssignment;
 use App\Models\StudentSkillProgress;
 use App\Models\Subject;
+use App\Models\Test;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -43,6 +44,7 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(32, Activity::query()->count());
         $this->assertSame(2, PracticeActivity::query()->count());
         $this->assertSame(6, Question::query()->count());
+        $this->assertSame(3, Test::query()->count());
         $this->assertSame(450, StudentSkillProgress::query()->count());
         $this->assertSame(18, User::query()->count());
         $this->assertSame(

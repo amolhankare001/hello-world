@@ -42,4 +42,9 @@ class Question extends Model
     {
         return $this->hasMany(QuestionOption::class);
     }
+
+    public function tests(): BelongsToMany
+    {
+        return $this->belongsToMany(Test::class, 'test_questions')->withPivot(['sort_order', 'marks'])->withTimestamps();
+    }
 }

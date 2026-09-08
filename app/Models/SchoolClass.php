@@ -27,4 +27,9 @@ class SchoolClass extends Model
     {
         return $this->hasMany(Division::class);
     }
+
+    public function tests(): HasMany
+    {
+        return $this->hasMany(Test::class);
+    }
 }

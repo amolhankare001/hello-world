@@ -28,9 +28,11 @@
                     @endif
                     @if (auth()->user()->hasRole(\App\Enums\RoleCode::SuperAdmin, \App\Enums\RoleCode::SchoolAdmin, \App\Enums\RoleCode::Mentor))
                         <a class="nav-link" href="{{ route('activities.index') }}">उपक्रम</a>
+                        <a class="nav-link" href="{{ route('tests.index') }}">चाचण्या</a>
                     @endif
                     @if (auth()->user()->hasRole(\App\Enums\RoleCode::Student))
                         <a class="nav-link" href="{{ route('practice.index') }}">सराव</a>
+                        <a class="nav-link" href="{{ route('assessments.index') }}">चाचण्या</a>
                     @endif
                     <span class="navbar-text">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">

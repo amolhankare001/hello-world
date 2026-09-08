@@ -21,7 +21,7 @@
                 <h2 class="h5">कौशल्य प्रगती</h2>
                 <p class="display-6 fw-bold mb-1">{{ $trackedSkillCount }}</p>
                 <p class="text-secondary">कौशल्यांची वैयक्तिक नोंद सुरू आहे.</p>
-                <a class="btn btn-primary mt-auto" href="{{ route('practice.index') }}">सराव निवडा</a>
+                <div class="d-flex flex-wrap gap-2 mt-auto"><a class="btn btn-primary" href="{{ route('practice.index') }}">सराव निवडा</a><a class="btn btn-outline-primary" href="{{ route('assessments.index') }}">चाचण्या पहा</a></div>
             </div></article>
         </div>
     </div>

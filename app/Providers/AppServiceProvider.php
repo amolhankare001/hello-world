@@ -12,6 +12,8 @@ use App\Models\Skill;
 use App\Models\SkillLevel;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Test;
+use App\Models\TestAttempt;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +48,9 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('activity', fn (string $value): Model => $this->contentActivity($value));
         Route::bind('question', fn (string $value): Model => $this->contentQuestion($value));
         Route::bind('practice_attempt', fn (string $value): Model => $this->studentPracticeAttempt($value));
+        Route::bind('test', fn (string $value): Model => $this->contentTest($value));
+        Route::bind('student_test_attempt', fn (string $value): Model => $this->studentTestAttempt($value));
+        Route::bind('test_attempt', fn (string $value): Model => $this->assessmentAttempt($value));
     }
 
     private function tenantModel(Builder $query, string $value): Model
@@ -124,6 +129,45 @@ class AppServiceProvider extends ServiceProvider
             ->where('student_id', $studentId ?? 0)
             ->where('attempt_key', $value)
             ->firstOrFail();
+    }
+
+    private function contentTest(string $value): Model
+    {
+        $query = Test::query();
+        $this->scopeContentQuery($query);
+
+        return $query->findOrFail($value);
+    }
+
+    private function studentTestAttempt(string $value): Model
+    {
+        /** @var User|null $user */
+        $user = request()->user();
+        $studentId = $user?->student()->value('id');
+
+        return TestAttempt::query()
+            ->where('student_id', $studentId ?? 0)
+            ->where('attempt_key', $value)
+            ->firstOrFail();
+    }
+
+    private function assessmentAttempt(string $value): Model
+    {
+        /** @var User|null $user */
+        $user = request()->user();
+        $query = TestAttempt::query()->where('attempt_key', $value);
+        $test = request()->route('test');
+
+        if ($test instanceof Test) {
+            $query->whereBelongsTo($test);
+        }
+
+        if ($user !== null && ! $user->hasRole(RoleCode::SuperAdmin)) {
+            $query->whereHas('student', fn (Builder $studentQuery) => $studentQuery
+                ->where('school_id', $user->school_id));
+        }
+
+        return $query->firstOrFail();
     }
 
     private function scopeContentQuery(Builder $query, ?string $relationship = null): void

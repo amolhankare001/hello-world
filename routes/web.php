@@ -2,6 +2,7 @@
 
 use App\Enums\RoleCode;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SkillController;
 use App\Http\Controllers\SkillLevelController;
+use App\Http\Controllers\StudentAssessmentController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentMentorAssignmentController;
 use App\Http\Controllers\StudentPracticeController;
@@ -85,6 +87,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         RoleCode::SchoolAdmin->value,
         RoleCode::Mentor->value,
     ]))->group(function (): void {
+        Route::resource('tests', AssessmentController::class)->except('destroy');
+        Route::get('tests/{test}/attempts/{test_attempt}', [AssessmentController::class, 'attempt'])
+            ->scopeBindings()
+            ->name('tests.attempts.show');
         Route::put('activities/{activity}/practice', [PracticeActivityController::class, 'update'])
             ->name('activities.practice.update');
         Route::post('activities/{activity}/questions', [QuestionController::class, 'store'])
@@ -98,6 +104,18 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     });
 
     Route::middleware('role:'.RoleCode::Student->value)->group(function (): void {
+        Route::get('assessments', [StudentAssessmentController::class, 'index'])
+            ->name('assessments.index');
+        Route::post('assessments/{test}/start', [StudentAssessmentController::class, 'start'])
+            ->name('assessments.start');
+        Route::get('test-attempts/{student_test_attempt}', [StudentAssessmentController::class, 'show'])
+            ->name('assessments.attempts.show');
+        Route::post('test-attempts/{student_test_attempt}', [StudentAssessmentController::class, 'submit'])
+            ->name('assessments.attempts.submit');
+        Route::get(
+            'test-attempts/{student_test_attempt}/result',
+            [StudentAssessmentController::class, 'result'],
+        )->name('assessments.attempts.result');
         Route::get('practice', [StudentPracticeController::class, 'index'])->name('practice.index');
         Route::post('practice/{activity}/start', [StudentPracticeController::class, 'start'])
             ->name('practice.start');
