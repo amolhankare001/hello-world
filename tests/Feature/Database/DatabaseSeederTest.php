@@ -4,10 +4,12 @@ namespace Tests\Feature\Database;
 
 use App\Enums\RoleCode;
 use App\Models\AcademicYear;
+use App\Models\Activity;
 use App\Models\Mentor;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\Skill;
+use App\Models\SkillLevel;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentMentorAssignment;
@@ -35,6 +37,8 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(15, StudentMentorAssignment::query()->count());
         $this->assertSame(2, Subject::query()->count());
         $this->assertSame(30, Skill::query()->count());
+        $this->assertSame(90, SkillLevel::query()->count());
+        $this->assertSame(30, Activity::query()->count());
         $this->assertSame(450, StudentSkillProgress::query()->count());
         $this->assertSame(18, User::query()->count());
         $this->assertSame(

@@ -25,6 +25,14 @@
 - Mentor account creation/update, password preservation, and school-scoped route binding.
 - Cross-school records return not found rather than revealing that another tenant owns them.
 
+## Phase 4
+
+- Super-administrator subject, hierarchical skill, and mastery-level creation/update with validation and audit events.
+- Curriculum policy matrices for super administrators, school administrators, and mentors.
+- Global activity administration plus school-specific activity creation by school administrators and mentors.
+- Activity skill/level consistency, publishing state, bilingual content, ownership, and audit events.
+- Cross-school activities and mismatched nested curriculum routes return not found.
+
 ## Later phases
 
 Feature coverage will follow each vertical product slice:

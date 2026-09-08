@@ -2,7 +2,7 @@
 
 A Laravel platform for personalized remedial Marathi and Mathematics learning, mentor intervention, and holistic student progress.
 
-Phases 1–3 establish the architecture, normalized database, Eloquent domain model, representative seed data, Bootstrap frontend foundation, secure session authentication, tenant-aware authorization, protected role dashboards, and school people-management workflows.
+Phases 1–4 establish the architecture, normalized database, Eloquent domain model, representative seed data, Bootstrap frontend foundation, secure session authentication, tenant-aware authorization, protected role dashboards, school people-management workflows, curriculum taxonomy, mastery levels, and global or school-specific learning activities.
 
 ## Requirements
 

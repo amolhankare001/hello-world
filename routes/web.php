@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RoleCode;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -9,8 +10,11 @@ use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SkillController;
+use App\Http\Controllers\SkillLevelController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentMentorAssignmentController;
+use App\Http\Controllers\SubjectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +48,35 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::resource('schools', SchoolController::class)
         ->except('destroy')
         ->middleware('role:'.RoleCode::SuperAdmin->value);
+
+    Route::middleware('role:'.RoleCode::SuperAdmin->value)->group(function (): void {
+        Route::resource('subjects', SubjectController::class)->except('destroy');
+        Route::post('subjects/{subject}/skills', [SkillController::class, 'store'])
+            ->name('subjects.skills.store');
+        Route::get('subjects/{subject}/skills/{skill}/edit', [SkillController::class, 'edit'])
+            ->scopeBindings()
+            ->name('subjects.skills.edit');
+        Route::put('subjects/{subject}/skills/{skill}', [SkillController::class, 'update'])
+            ->scopeBindings()
+            ->name('subjects.skills.update');
+        Route::post('subjects/{subject}/skills/{skill}/levels', [SkillLevelController::class, 'store'])
+            ->scopeBindings()
+            ->name('subjects.skills.levels.store');
+        Route::put(
+            'subjects/{subject}/skills/{skill}/levels/{skill_level}',
+            [SkillLevelController::class, 'update'],
+        )
+            ->scopeBindings()
+            ->name('subjects.skills.levels.update');
+    });
+
+    Route::resource('activities', ActivityController::class)
+        ->except('destroy')
+        ->middleware('role:'.implode(',', [
+            RoleCode::SuperAdmin->value,
+            RoleCode::SchoolAdmin->value,
+            RoleCode::Mentor->value,
+        ]));
 
     Route::middleware('role:'.RoleCode::SchoolAdmin->value)->group(function (): void {
         Route::resource('school-classes', SchoolClassController::class)->except('destroy');

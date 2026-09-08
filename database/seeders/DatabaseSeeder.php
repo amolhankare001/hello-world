@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\RoleCode;
 use App\Models\AcademicYear;
+use App\Models\Activity;
 use App\Models\Badge;
 use App\Models\Division;
 use App\Models\HolisticDomain;
@@ -58,7 +59,7 @@ class DatabaseSeeder extends Seeder
                 'name_marathi' => 'अ',
             ]);
 
-            User::factory()->create([
+            $platformAdministrator = User::factory()->create([
                 'role_id' => $roles[RoleCode::SuperAdmin->value]->id,
                 'name' => 'Platform Administrator',
                 'email' => 'admin@example.test',
@@ -133,7 +134,7 @@ class DatabaseSeeder extends Seeder
                 'sort_order' => 2,
             ]);
 
-            $this->createSkills($marathi, [
+            $this->createSkills($marathi, $platformAdministrator, [
                 ['LETTER_RECOGNITION', 'Letter recognition', 'अक्षर ओळख'],
                 ['VOWELS', 'Vowels', 'स्वर'],
                 ['CONSONANTS', 'Consonants', 'व्यंजन'],
@@ -151,7 +152,7 @@ class DatabaseSeeder extends Seeder
                 ['PARAGRAPH_READING', 'Paragraph reading', 'परिच्छेद वाचन'],
             ]);
 
-            $this->createSkills($mathematics, [
+            $this->createSkills($mathematics, $platformAdministrator, [
                 ['NUMBER_RECOGNITION', 'Number recognition', 'संख्या ओळख'],
                 ['NUMBER_READING', 'Number reading', 'संख्या वाचन'],
                 ['NUMBER_COMPARISON', 'Number comparison', 'संख्या तुलना'],
@@ -204,14 +205,60 @@ class DatabaseSeeder extends Seeder
     /**
      * @param  list<array{string, string, string}>  $skills
      */
-    private function createSkills(Subject $subject, array $skills): void
+    private function createSkills(Subject $subject, User $creator, array $skills): void
     {
         foreach ($skills as $index => [$code, $name, $nameMarathi]) {
-            $subject->skills()->create([
+            $skill = $subject->skills()->create([
                 'code' => $code,
                 'name' => $name,
                 'name_marathi' => $nameMarathi,
                 'sort_order' => $index + 1,
+            ]);
+
+            $levels = $skill->levels()->createMany([
+                [
+                    'level' => 1,
+                    'name' => 'Foundation',
+                    'name_marathi' => 'पायाभूत',
+                    'learning_objective' => "Recognize and understand the basics of {$name}.",
+                    'mastery_threshold' => 70,
+                ],
+                [
+                    'level' => 2,
+                    'name' => 'Developing',
+                    'name_marathi' => 'विकसनशील',
+                    'learning_objective' => "Apply {$name} with guided practice.",
+                    'mastery_threshold' => 80,
+                ],
+                [
+                    'level' => 3,
+                    'name' => 'Mastery',
+                    'name_marathi' => 'प्रावीण्य',
+                    'learning_objective' => "Use {$name} independently and accurately.",
+                    'mastery_threshold' => 90,
+                ],
+            ]);
+
+            Activity::query()->create([
+                'skill_id' => $skill->id,
+                'skill_level_id' => $levels->first()->id,
+                'created_by' => $creator->id,
+                'code' => "{$subject->code}_{$code}_LEARN_1",
+                'type' => 'learn',
+                'title' => "Learn {$name}",
+                'title_marathi' => "{$nameMarathi} शिका",
+                'instructions' => 'Read the explanation and examples before starting practice.',
+                'instructions_marathi' => 'सराव सुरू करण्यापूर्वी स्पष्टीकरण आणि उदाहरणे वाचा.',
+                'content' => [
+                    'body' => "A guided introduction to {$name}.",
+                    'body_marathi' => "{$nameMarathi} या कौशल्याची मार्गदर्शित ओळख.",
+                    'examples' => [],
+                ],
+                'difficulty' => 1,
+                'estimated_minutes' => 10,
+                'max_score' => 0,
+                'status' => 'published',
+                'published_at' => now(),
             ]);
         }
     }

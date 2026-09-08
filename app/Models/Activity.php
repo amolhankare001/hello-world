@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,10 +11,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Activity extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'skill_id', 'skill_level_id', 'created_by', 'code', 'type', 'title', 'title_marathi',
+        'school_id', 'skill_id', 'skill_level_id', 'created_by', 'code', 'type', 'title', 'title_marathi',
         'instructions', 'instructions_marathi', 'content', 'difficulty', 'estimated_minutes',
         'max_score', 'status', 'published_at',
     ];
@@ -21,6 +22,11 @@ class Activity extends Model
     protected function casts(): array
     {
         return ['content' => 'array', 'published_at' => 'datetime'];
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
     }
 
     public function skill(): BelongsTo

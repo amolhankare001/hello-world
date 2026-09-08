@@ -44,4 +44,9 @@ class School extends Model
     {
         return $this->hasMany(Mentor::class);
     }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
 }
