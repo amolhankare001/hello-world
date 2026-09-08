@@ -1,0 +1,45 @@
+<?php
+
+namespace Tests\Feature\Database;
+
+use App\Enums\RoleCode;
+use App\Models\AcademicYear;
+use App\Models\Mentor;
+use App\Models\Role;
+use App\Models\School;
+use App\Models\Skill;
+use App\Models\Student;
+use App\Models\StudentEnrollment;
+use App\Models\StudentMentorAssignment;
+use App\Models\StudentSkillProgress;
+use App\Models\Subject;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Tests\TestCase;
+
+class DatabaseSeederTest extends TestCase
+{
+    use LazilyRefreshDatabase;
+
+    public function test_creates_the_complete_phase_one_demo_dataset(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(4, Role::query()->count());
+        $this->assertSame(1, School::query()->count());
+        $this->assertSame(1, AcademicYear::query()->count());
+        $this->assertSame(1, Mentor::query()->count());
+        $this->assertSame(15, Student::query()->count());
+        $this->assertSame(15, StudentEnrollment::query()->count());
+        $this->assertSame(15, StudentMentorAssignment::query()->count());
+        $this->assertSame(2, Subject::query()->count());
+        $this->assertSame(30, Skill::query()->count());
+        $this->assertSame(450, StudentSkillProgress::query()->count());
+        $this->assertSame(18, User::query()->count());
+        $this->assertSame(
+            RoleCode::SuperAdmin,
+            User::query()->where('email', 'admin@example.test')->firstOrFail()->role->code
+        );
+    }
+}
