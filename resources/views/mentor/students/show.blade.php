@@ -67,7 +67,9 @@
                 </thead>
                 <tbody>
                     @foreach ($analyses as $analysis)
-                        @php($metrics = $analysis['metrics'])
+                        @php
+                            $metrics = $analysis['metrics'];
+                        @endphp
                         <tr>
                             <th scope="row">
                                 {{ $analysis['skill']->name_marathi }}

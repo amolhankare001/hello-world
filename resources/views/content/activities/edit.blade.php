@@ -8,7 +8,9 @@
     </form>
 
     @if ($activity->type === 'practice' && $activity->practiceActivity)
-        @php($practiceConfiguration = $activity->practiceActivity->configuration ?? [])
+        @php
+            $practiceConfiguration = $activity->practiceActivity->configuration ?? [];
+        @endphp
         <section class="card portal-card mt-4">
             <div class="card-header bg-white"><h2 class="h5 mb-0">सराव रचना / Practice settings</h2></div>
             <form method="POST" action="{{ route('activities.practice.update', $activity) }}">

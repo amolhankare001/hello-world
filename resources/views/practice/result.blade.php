@@ -10,7 +10,9 @@
 
     <div class="vstack gap-3">
         @foreach ($responses as $response)
-            @php($question = $questions->get($response['question_id']))
+            @php
+                $question = $questions->get($response['question_id']);
+            @endphp
             @continue($question === null)
             @php
                 $selectionType = in_array($question->type, ['mcq', 'image_selection', 'audio_selection'], true);

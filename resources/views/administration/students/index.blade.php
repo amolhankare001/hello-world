@@ -8,8 +8,10 @@
             <thead><tr><th>विद्यार्थी</th><th>क्रमांक</th><th>वर्ग</th><th>मार्गदर्शक</th><th>स्थिती</th><th></th></tr></thead>
             <tbody>
                 @forelse ($students as $student)
-                    @php($enrollment = $student->enrollments->first())
-                    @php($assignment = $student->mentorAssignments->first())
+                    @php
+                        $enrollment = $student->enrollments->first();
+                        $assignment = $student->mentorAssignments->first();
+                    @endphp
                     <tr>
                         <td><strong>{{ $student->user->name }}</strong><br><small class="text-secondary">{{ $student->user->email }}</small></td>
                         <td>{{ $student->student_number }}</td>

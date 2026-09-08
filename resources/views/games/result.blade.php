@@ -1,5 +1,7 @@
 <x-layouts.app title="Game result">
-    @php($result = $gameSession->result)
+    @php
+        $result = $gameSession->result;
+    @endphp
     <section class="game-result-hero portal-card mb-4 p-4 p-lg-5 text-center">
         <span class="badge rounded-pill text-bg-success mb-3">खेळ पूर्ण</span>
         <div class="game-result-icon mx-auto mb-3" aria-hidden="true">🏆</div>

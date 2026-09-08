@@ -88,6 +88,11 @@ class StudentPracticeTest extends TestCase
             ->assertRedirect(route('practice.attempts.result', $attempt));
 
         $attempt->refresh();
+        $this->actingAs($studentUser)
+            ->get(route('practice.attempts.result', $attempt))
+            ->assertOk()
+            ->assertSee('50%')
+            ->assertSee('तुमचे उत्तर:');
         $this->assertSame('completed', $attempt->status);
         $this->assertSame(1, $attempt->correct_count);
         $this->assertSame(1, $attempt->incorrect_count);

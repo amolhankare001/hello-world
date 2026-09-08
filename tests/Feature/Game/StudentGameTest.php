@@ -129,6 +129,11 @@ class StudentGameTest extends TestCase
 
         $session->refresh();
         $result = $session->result()->sole();
+        $this->actingAs($user)
+            ->get(route('games.sessions.result', $session))
+            ->assertOk()
+            ->assertSee('100%')
+            ->assertSee('एकूण गुण');
         $this->assertSame('completed', $session->status);
         $this->assertSame(2, $result->correct_count);
         $this->assertSame(0, $result->incorrect_count);

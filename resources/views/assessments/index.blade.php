@@ -2,7 +2,9 @@
     <div class="mb-4"><h1 class="h2 portal-brand mb-1">माझ्या चाचण्या</h1><p class="text-secondary mb-0">पूर्व चाचणी, पुनर्मूल्यांकन आणि उत्तर चाचणी</p></div>
     <div class="row g-4 mb-5">
         @forelse ($tests as $test)
-            @php($canStart = $test->in_progress_attempts_count > 0 || $test->student_attempts_count < $test->max_attempts)
+            @php
+                $canStart = $test->in_progress_attempts_count > 0 || $test->student_attempts_count < $test->max_attempts;
+            @endphp
             <div class="col-md-6 col-xl-4">
                 <article class="card portal-card h-100">
                     <div class="card-body p-4">

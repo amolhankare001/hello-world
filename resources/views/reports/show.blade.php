@@ -142,7 +142,9 @@
                     <h3 class="h6 mt-3">कृती पुरावे स्वतंत्र वर्गीकरण</h3>
                     <div class="row g-2 mb-3">
                         @foreach (['practice' => 'सराव', 'game' => 'खेळ', 'simulation' => 'अनुकरण', 'assessment' => 'मूल्यमापन'] as $activityType => $label)
-                            @php($activityItems = $studentEvents->where('activity_type', $activityType))
+                            @php
+                                $activityItems = $studentEvents->where('activity_type', $activityType);
+                            @endphp
                             <div class="col-6 col-md-3">
                                 <div class="border rounded p-2">
                                     <strong>{{ $label }}</strong><br>
@@ -183,7 +185,9 @@
                 </section>
             @endforeach
         @elseif (in_array($reportType, ['pre_test', 'post_test'], true))
-            @php($requiredTestType = $reportType === 'pre_test' ? 'pre_test' : 'post_test')
+            @php
+                $requiredTestType = $reportType === 'pre_test' ? 'pre_test' : 'post_test';
+            @endphp
             <section class="report-section">
                 <table class="table table-sm table-bordered report-table">
                     <thead><tr><th>विद्यार्थी</th><th>चाचणी</th><th>विषय</th><th>गुण</th><th>टक्केवारी</th><th>दिनांक</th></tr></thead>
@@ -244,7 +248,9 @@
                 </table>
             </section>
         @elseif (in_array($reportType, ['game_performance', 'practice'], true))
-            @php($requiredActivityType = $reportType === 'game_performance' ? 'game' : 'practice')
+            @php
+                $requiredActivityType = $reportType === 'game_performance' ? 'game' : 'practice';
+            @endphp
             <section class="report-section">
                 <table class="table table-sm table-bordered report-table">
                     <thead><tr><th>विद्यार्थी</th><th>कौशल्य</th><th>गुण</th><th>अचूकता</th><th>कालावधी</th><th>दिनांक</th></tr></thead>

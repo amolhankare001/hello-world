@@ -1,5 +1,7 @@
 <x-layouts.app title="Simulation result">
-    @php($result = $simulationSession->result)
+    @php
+        $result = $simulationSession->result;
+    @endphp
     <section class="simulation-result-hero portal-card mb-4 p-4 p-lg-5 text-center">
         <span class="badge rounded-pill text-bg-success mb-3">अनुकरण पूर्ण</span>
         <div class="simulation-result-icon mx-auto mb-3" aria-hidden="true">🧩</div>

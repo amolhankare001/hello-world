@@ -103,7 +103,9 @@
             @else
                 <div class="row g-3">
                     @foreach ($studentCards as $card)
-                        @php($assignment = $card['assignment'])
+                        @php
+                            $assignment = $card['assignment'];
+                        @endphp
                         <div class="col-12 col-md-6 col-xl-4">
                             <a class="card h-100 text-decoration-none text-body border mentor-student-card"
                                 href="{{ route('mentor.students.show', $assignment->student) }}">

@@ -116,6 +116,11 @@ class StudentSimulationTest extends TestCase
 
         $session->refresh();
         $result = $session->result()->sole();
+        $this->actingAs($user)
+            ->get(route('simulations.sessions.result', $session))
+            ->assertOk()
+            ->assertSee('100%')
+            ->assertSee('एकूण गुण');
         $this->assertSame('completed', $session->status);
         $this->assertSame(2, $result->successful_count);
         $this->assertSame(0, $result->unsuccessful_count);

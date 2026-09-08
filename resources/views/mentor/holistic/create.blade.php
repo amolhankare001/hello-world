@@ -77,7 +77,9 @@
                 <p class="text-secondary mb-0">१ सुरुवात · २ विकसनशील · ३ प्रगतीशील · ४ निपुण · ५ प्रगत</p>
             </div>
             <div class="card-body">
-                @php($ratingIndex = 0)
+                @php
+                    $ratingIndex = 0;
+                @endphp
                 @foreach ($domains as $domain)
                     <fieldset class="mb-4">
                         <legend class="h5">{{ $domain->name_marathi }}</legend>
@@ -98,7 +100,9 @@
                                         <input class="form-control" id="rating_notes_{{ $indicator->id }}" name="ratings[{{ $ratingIndex }}][notes]" value="{{ old("ratings.{$ratingIndex}.notes") }}" placeholder="ऐच्छिक पुरावा किंवा उदाहरण">
                                     </div>
                                 </div>
-                                @php($ratingIndex++)
+                                @php
+                                    $ratingIndex++;
+                                @endphp
                             @endforeach
                         </div>
                     </fieldset>

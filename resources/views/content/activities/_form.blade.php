@@ -1,4 +1,6 @@
-@php($editingActivity = $activity ?? null)
+@php
+    $editingActivity = $activity ?? null;
+@endphp
 <div class="row g-3">
     @if (auth()->user()->hasRole(\App\Enums\RoleCode::SuperAdmin))
         <div class="col-md-4">

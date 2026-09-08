@@ -10,7 +10,9 @@
 
     <div class="row g-4">
         @forelse ($games as $game)
-            @php($firstLevel = $game->levels->first())
+            @php
+                $firstLevel = $game->levels->first();
+            @endphp
             <div class="col-md-6">
                 <article class="card portal-card game-catalog-card h-100">
                     <div class="card-body p-4">
