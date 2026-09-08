@@ -67,6 +67,11 @@ class Student extends Model
         return $this->hasMany(TestAttempt::class);
     }
 
+    public function gameSessions(): HasMany
+    {
+        return $this->hasMany(GameSession::class);
+    }
+
     public function xpTransactions(): HasMany
     {
         return $this->hasMany(XpTransaction::class);

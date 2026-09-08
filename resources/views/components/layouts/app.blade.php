@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -32,6 +33,7 @@
                     @endif
                     @if (auth()->user()->hasRole(\App\Enums\RoleCode::Student))
                         <a class="nav-link" href="{{ route('practice.index') }}">सराव</a>
+                        <a class="nav-link" href="{{ route('games.index') }}">खेळ</a>
                         <a class="nav-link" href="{{ route('assessments.index') }}">चाचण्या</a>
                     @endif
                     <span class="navbar-text">{{ auth()->user()->name }}</span>

@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Enums\RoleCode;
 use App\Models\Activity;
+use App\Models\Game;
+use App\Models\GameQuestion;
+use App\Models\GameSession;
 use App\Models\Mentor;
 use App\Models\PracticeAttempt;
 use App\Models\Question;
@@ -48,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('activity', fn (string $value): Model => $this->contentActivity($value));
         Route::bind('question', fn (string $value): Model => $this->contentQuestion($value));
         Route::bind('practice_attempt', fn (string $value): Model => $this->studentPracticeAttempt($value));
+        Route::bind('game', fn (string $value): Model => Game::query()->where('code', $value)->firstOrFail());
+        Route::bind('game_session', fn (string $value): Model => $this->studentGameSession($value));
+        Route::bind('game_question', fn (string $value): Model => $this->gameQuestion($value));
         Route::bind('test', fn (string $value): Model => $this->contentTest($value));
         Route::bind('student_test_attempt', fn (string $value): Model => $this->studentTestAttempt($value));
         Route::bind('test_attempt', fn (string $value): Model => $this->assessmentAttempt($value));
@@ -135,6 +141,30 @@ class AppServiceProvider extends ServiceProvider
     {
         $query = Test::query();
         $this->scopeContentQuery($query);
+
+        return $query->findOrFail($value);
+    }
+
+    private function studentGameSession(string $value): Model
+    {
+        /** @var User|null $user */
+        $user = request()->user();
+        $studentId = $user?->student()->value('id');
+
+        return GameSession::query()
+            ->where('student_id', $studentId ?? 0)
+            ->where('session_key', $value)
+            ->firstOrFail();
+    }
+
+    private function gameQuestion(string $value): Model
+    {
+        $query = GameQuestion::query();
+        $session = request()->route('game_session');
+
+        if ($session instanceof GameSession) {
+            $query->whereBelongsTo($session, 'session');
+        }
 
         return $query->findOrFail($value);
     }

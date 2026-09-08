@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Game extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'created_by', 'code', 'engine_key', 'title', 'title_marathi', 'description',
@@ -34,5 +35,10 @@ class Game extends Model
     public function sessions(): HasMany
     {
         return $this->hasMany(GameSession::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'code';
     }
 }

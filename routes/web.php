@@ -17,6 +17,7 @@ use App\Http\Controllers\SkillController;
 use App\Http\Controllers\SkillLevelController;
 use App\Http\Controllers\StudentAssessmentController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentGameController;
 use App\Http\Controllers\StudentMentorAssignmentController;
 use App\Http\Controllers\StudentPracticeController;
 use App\Http\Controllers\SubjectController;
@@ -104,6 +105,19 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     });
 
     Route::middleware('role:'.RoleCode::Student->value)->group(function (): void {
+        Route::get('games', [StudentGameController::class, 'index'])->name('games.index');
+        Route::post('games/{game}/start', [StudentGameController::class, 'start'])->name('games.start');
+        Route::get('game-sessions/{game_session}', [StudentGameController::class, 'show'])
+            ->name('games.sessions.show');
+        Route::post(
+            'game-sessions/{game_session}/questions/{game_question}',
+            [StudentGameController::class, 'answer'],
+        )->middleware('throttle:60,1')->name('games.sessions.answer');
+        Route::post('game-sessions/{game_session}/finish', [StudentGameController::class, 'finish'])
+            ->middleware('throttle:20,1')
+            ->name('games.sessions.finish');
+        Route::get('game-sessions/{game_session}/result', [StudentGameController::class, 'result'])
+            ->name('games.sessions.result');
         Route::get('assessments', [StudentAssessmentController::class, 'index'])
             ->name('assessments.index');
         Route::post('assessments/{test}/start', [StudentAssessmentController::class, 'start'])

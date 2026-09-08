@@ -133,7 +133,10 @@
                 @if ($todayGame)
                     <h3 class="h5">{{ $todayGame->title_marathi ?: $todayGame->title }}</h3>
                     <p class="text-secondary">{{ $todayGame->description_marathi ?: $todayGame->description }}</p>
-                    <span class="btn btn-outline-primary disabled mt-auto student-touch-target" aria-disabled="true">खेळ लवकरच सुरू होईल</span>
+                    <form class="mt-auto" method="POST" action="{{ route('games.start', $todayGame) }}">
+                        @csrf
+                        <button class="btn btn-outline-primary w-100 student-touch-target" type="submit">खेळ सुरू करा</button>
+                    </form>
                 @else
                     <p class="text-secondary">नवीन अध्ययन खेळ लवकरच येथे येईल.</p>
                 @endif

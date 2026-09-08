@@ -7,6 +7,7 @@ use App\Models\AcademicYear;
 use App\Models\Activity;
 use App\Models\Badge;
 use App\Models\Division;
+use App\Models\Game;
 use App\Models\HolisticDomain;
 use App\Models\Mentor;
 use App\Models\Question;
@@ -171,6 +172,7 @@ class DatabaseSeeder extends Seeder
                 ['GEOMETRIC_SHAPES', 'Geometric shapes', 'भूमितीय आकार'],
                 ['WORD_PROBLEMS', 'Word problems', 'शब्दसमस्या'],
             ]);
+            $this->createDemoGames($platformAdministrator);
             $this->createDemoPracticeContent($platformAdministrator);
             $this->createDemoAssessments($school, $academicYear, $schoolClass, $platformAdministrator);
 
@@ -339,6 +341,141 @@ class DatabaseSeeder extends Seeder
                 'status' => 'published',
                 'published_at' => now(),
             ]);
+        }
+    }
+
+    private function createDemoGames(User $creator): void
+    {
+        $letterSkill = Skill::query()->where('code', 'LETTER_RECOGNITION')->firstOrFail();
+        $numberSkill = Skill::query()->where('code', 'NUMBER_RECOGNITION')->firstOrFail();
+        $levelDefinitions = [
+            [
+                'level' => 1,
+                'name' => 'Foundation',
+                'name_marathi' => 'पायाभूत',
+                'difficulty' => 1,
+                'configuration' => [
+                    'question_count' => 6,
+                    'choice_count' => 3,
+                    'item_count' => 6,
+                    'lives' => 3,
+                    'response_time_seconds' => 12,
+                    'difficulty_up_accuracy' => 80,
+                    'remedial_accuracy' => 50,
+                    'minimum_difficulty' => 1,
+                    'maximum_difficulty' => 3,
+                ],
+                'target_score' => 420,
+                'time_limit_seconds' => 90,
+            ],
+            [
+                'level' => 2,
+                'name' => 'Growing',
+                'name_marathi' => 'प्रगती',
+                'difficulty' => 2,
+                'configuration' => [
+                    'question_count' => 8,
+                    'choice_count' => 4,
+                    'item_count' => 10,
+                    'lives' => 3,
+                    'response_time_seconds' => 10,
+                    'difficulty_up_accuracy' => 80,
+                    'remedial_accuracy' => 50,
+                    'minimum_difficulty' => 1,
+                    'maximum_difficulty' => 3,
+                ],
+                'target_score' => 560,
+                'time_limit_seconds' => 100,
+            ],
+            [
+                'level' => 3,
+                'name' => 'Challenge',
+                'name_marathi' => 'आव्हान',
+                'difficulty' => 3,
+                'configuration' => [
+                    'question_count' => 10,
+                    'choice_count' => 4,
+                    'item_count' => 20,
+                    'lives' => 3,
+                    'response_time_seconds' => 8,
+                    'difficulty_up_accuracy' => 80,
+                    'remedial_accuracy' => 50,
+                    'minimum_difficulty' => 1,
+                    'maximum_difficulty' => 3,
+                ],
+                'target_score' => 700,
+                'time_limit_seconds' => 110,
+            ],
+        ];
+        $letters = collect([
+            'अ', 'आ', 'इ', 'ई', 'उ', 'ऊ', 'ए', 'ऐ', 'ओ', 'औ',
+            'क', 'ख', 'ग', 'घ', 'च', 'ज', 'ट', 'त', 'प', 'म',
+        ])->map(fn (string $letter): array => ['value' => $letter, 'label' => $letter])->all();
+        $numbers = collect(range(1, 20))->map(function (int $number): array {
+            $label = strtr((string) $number, [
+                '0' => '०',
+                '1' => '१',
+                '2' => '२',
+                '3' => '३',
+                '4' => '४',
+                '5' => '५',
+                '6' => '६',
+                '7' => '७',
+                '8' => '८',
+                '9' => '९',
+            ]);
+
+            return ['value' => (string) $number, 'label' => $label];
+        })->all();
+        $games = [
+            [
+                'skill' => $letterSkill,
+                'attributes' => [
+                    'created_by' => $creator->id,
+                    'code' => 'AKSHAR_PAKDA',
+                    'engine_key' => 'catch',
+                    'title' => 'Catch the Letter',
+                    'title_marathi' => 'अक्षर पकडा',
+                    'description' => 'Find and catch the requested Marathi letter.',
+                    'description_marathi' => 'दिलेल्या मराठी अक्षराचे कार्ड ओळखा आणि पकडा.',
+                    'configuration' => [
+                        'icon' => 'अ',
+                        'prompt' => 'Catch the letter :target',
+                        'prompt_marathi' => ':target हे अक्षर पकडा',
+                        'items' => $letters,
+                        'visual_theme' => 'marathi_letters',
+                        'sound_hook' => 'positive_tone',
+                    ],
+                    'status' => 'published',
+                ],
+            ],
+            [
+                'skill' => $numberSkill,
+                'attributes' => [
+                    'created_by' => $creator->id,
+                    'code' => 'NUMBER_CATCH',
+                    'engine_key' => 'catch',
+                    'title' => 'Number Catch',
+                    'title_marathi' => 'अंक पकडा',
+                    'description' => 'Find and catch the requested number.',
+                    'description_marathi' => 'दिलेला अंक ओळखा आणि त्याचे कार्ड पकडा.',
+                    'configuration' => [
+                        'icon' => '१२३',
+                        'prompt' => 'Catch the number :target',
+                        'prompt_marathi' => ':target हा अंक पकडा',
+                        'items' => $numbers,
+                        'visual_theme' => 'numbers',
+                        'sound_hook' => 'positive_tone',
+                    ],
+                    'status' => 'published',
+                ],
+            ],
+        ];
+
+        foreach ($games as $definition) {
+            $game = Game::query()->create($definition['attributes']);
+            $game->levels()->createMany($levelDefinitions);
+            $game->skills()->attach($definition['skill']->id, ['weight' => 1]);
         }
     }
 
