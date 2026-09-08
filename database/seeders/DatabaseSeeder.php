@@ -14,6 +14,7 @@ use App\Models\Question;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\SchoolClass;
+use App\Models\Simulation;
 use App\Models\Skill;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
@@ -173,6 +174,7 @@ class DatabaseSeeder extends Seeder
                 ['WORD_PROBLEMS', 'Word problems', 'शब्दसमस्या'],
             ]);
             $this->createDemoGames($platformAdministrator);
+            $this->createDemoSimulations($platformAdministrator);
             $this->createDemoPracticeContent($platformAdministrator);
             $this->createDemoAssessments($school, $academicYear, $schoolClass, $platformAdministrator);
 
@@ -500,6 +502,319 @@ class DatabaseSeeder extends Seeder
                     ->all(),
             );
         }
+    }
+
+    private function createDemoSimulations(User $creator): void
+    {
+        foreach ($this->simulationDefinitions() as $definition) {
+            $simulation = Simulation::query()->create([
+                'created_by' => $creator->id,
+                'code' => $definition['code'],
+                'engine_key' => $definition['engine_key'],
+                'title' => $definition['title'],
+                'title_marathi' => $definition['title_marathi'],
+                'description' => $definition['description'],
+                'description_marathi' => $definition['description_marathi'],
+                'configuration' => [
+                    'icon' => $definition['icon'],
+                    'challenge_count' => 5,
+                    'max_attempts' => 3,
+                    'difficulty_up_accuracy' => 80,
+                    'remedial_accuracy' => 50,
+                    'minimum_difficulty' => 1,
+                    'maximum_difficulty' => 5,
+                    ...($definition['configuration'] ?? []),
+                ],
+                'status' => 'published',
+            ]);
+            $skills = Skill::query()
+                ->whereIn('code', array_keys($definition['skills']))
+                ->get()
+                ->keyBy('code');
+            $simulation->skills()->attach(
+                collect($definition['skills'])
+                    ->mapWithKeys(fn (int|float $weight, string $code): array => [
+                        $skills->get($code)->id => ['weight' => $weight],
+                    ])
+                    ->all(),
+            );
+        }
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function simulationDefinitions(): array
+    {
+        return [
+            $this->simulationDefinition(
+                'NUMBER_LINE_SIMULATION',
+                'number_line',
+                'Number Line',
+                'संख्यारेषा',
+                'Move a marker forward and backward on a number line.',
+                'खूण पुढे-मागे हलवून संख्यारेषा समजून घ्या.',
+                '↔️',
+                ['NUMBER_ORDERING' => 1],
+            ),
+            $this->simulationDefinition(
+                'ADDITION_OBJECTS_SIMULATION',
+                'addition_objects',
+                'Addition with Objects',
+                'वस्तूंसह बेरीज',
+                'Combine objects to model addition.',
+                'वस्तू एकत्र करून बेरीज तयार करा.',
+                '🍎',
+                ['ADDITION' => 1],
+            ),
+            $this->simulationDefinition(
+                'SUBTRACTION_OBJECTS_SIMULATION',
+                'subtraction_objects',
+                'Subtraction with Objects',
+                'वस्तूंसह वजाबाकी',
+                'Remove objects to model subtraction.',
+                'वस्तू कमी करून वजाबाकी तयार करा.',
+                '🥭',
+                ['SUBTRACTION' => 1],
+            ),
+            $this->simulationDefinition(
+                'PLACE_VALUE_BLOCKS_SIMULATION',
+                'place_value_blocks',
+                'Place Value Blocks',
+                'स्थानिक किंमत ठोकळे',
+                'Build numbers with hundreds, tens and ones.',
+                'शेकडा, दशक आणि एकक ठोकळ्यांनी संख्या तयार करा.',
+                '🧱',
+                ['PLACE_VALUE' => 1],
+            ),
+            $this->simulationDefinition(
+                'MULTIPLICATION_ARRAYS_SIMULATION',
+                'multiplication_arrays',
+                'Multiplication Arrays',
+                'गुणाकार मांडणी',
+                'Arrange dots into rows and columns.',
+                'ठिपके ओळी आणि स्तंभांत मांडून गुणाकार समजा.',
+                '🔵',
+                ['MULTIPLICATION' => 1],
+            ),
+            $this->simulationDefinition(
+                'DIVISION_SHARING_SIMULATION',
+                'division_sharing',
+                'Division Sharing',
+                'भागाकार वाटप',
+                'Share objects equally into groups.',
+                'वस्तू गटांत समान वाटून भागाकार समजा.',
+                '🤲',
+                ['DIVISION' => 1],
+            ),
+            $this->simulationDefinition(
+                'FRACTION_PIZZA_SIMULATION',
+                'fraction_pizza',
+                'Fraction Pizza',
+                'अपूर्णांक पिझ्झा',
+                'Fill equal pizza parts to model a fraction.',
+                'पिझ्झाचे समान भाग भरून अपूर्णांक तयार करा.',
+                '🍕',
+                ['FRACTIONS' => 1],
+            ),
+            $this->simulationDefinition(
+                'MONEY_SIMULATION',
+                'money',
+                'Money',
+                'पैशांची मांडणी',
+                'Combine coins and notes to make an amount.',
+                'नाणी व नोटा एकत्र करून रक्कम तयार करा.',
+                '💰',
+                ['MONEY' => 1],
+            ),
+            $this->simulationDefinition(
+                'CLOCK_SIMULATION',
+                'clock',
+                'Clock',
+                'घड्याळ',
+                'Move clock hands to show a time.',
+                'काटे हलवून घड्याळात वेळ दाखवा.',
+                '🕒',
+                ['TIME' => 1],
+            ),
+            $this->simulationDefinition(
+                'MEASUREMENT_SIMULATION',
+                'measurement',
+                'Measurement',
+                'मोजमाप',
+                'Change a line to the requested length.',
+                'रेषेची लांबी बदलून मोजमाप समजा.',
+                '📏',
+                ['MEASUREMENT' => 1],
+            ),
+            $this->simulationDefinition(
+                'GEOMETRY_BUILDER_SIMULATION',
+                'geometry_builder',
+                'Geometry Builder',
+                'आकार बांधणी',
+                'Drag shapes to rebuild a pattern.',
+                'आकार ओढून दिलेला क्रम पुन्हा तयार करा.',
+                '🔺',
+                ['GEOMETRIC_SHAPES' => 1],
+            ),
+            $this->tokenSimulationDefinition(
+                'LETTER_JOINING_SIMULATION',
+                'Letter Joining',
+                'अक्षर जोडणी',
+                'Join letters to build a Marathi word.',
+                'अक्षरे जोडून मराठी शब्द तयार करा.',
+                '🔤',
+                ['LETTER_JOINING' => 1, 'WORD_FORMATION' => 1],
+                [
+                    $this->simulationChallenge('Build the word lotus.', 'कमळ हा शब्द तयार करा.', ['क', 'म', 'ळ'], ['क', 'म', 'ळ', 'र']),
+                    $this->simulationChallenge('Build the word house.', 'घर हा शब्द तयार करा.', ['घ', 'र'], ['घ', 'र', 'ग', 'ल']),
+                    $this->simulationChallenge('Build the word fruit.', 'फळ हा शब्द तयार करा.', ['फ', 'ळ'], ['फ', 'ळ', 'प', 'ल']),
+                ],
+            ),
+            $this->tokenSimulationDefinition(
+                'MATRA_CHANGE_SIMULATION',
+                'Change the Vowel Mark',
+                'मात्रा बदल',
+                'Move vowel marks to create the requested word.',
+                'मात्रा हलवून दिलेला शब्द तयार करा.',
+                '✍️',
+                ['VOWEL_MARKS' => 1, 'WORD_FORMATION' => 1],
+                [
+                    $this->simulationChallenge('Build the word peacock.', 'मोर हा शब्द तयार करा.', ['म', 'ो', 'र'], ['म', 'ा', 'ो', 'र'], '🦚'),
+                    $this->simulationChallenge('Build the word flower.', 'फूल हा शब्द तयार करा.', ['फ', 'ू', 'ल'], ['फ', 'ु', 'ू', 'ल'], '🌼'),
+                    $this->simulationChallenge('Build the word mango.', 'आंबा हा शब्द तयार करा.', ['आं', 'बा'], ['आ', 'आं', 'बा', 'ब'], '🥭'),
+                ],
+            ),
+            $this->tokenSimulationDefinition(
+                'BARAKHADI_BUILDER_SIMULATION',
+                'Barakhadi Builder',
+                'बाराखडी बांधणी',
+                'Combine a consonant and vowel mark.',
+                'व्यंजन आणि मात्रा जोडून अक्षर तयार करा.',
+                'क',
+                ['BARAKHADI' => 1, 'VOWEL_MARKS' => 1],
+                [
+                    $this->simulationChallenge('Build kaa.', 'का तयार करा.', ['क', 'ा'], ['क', 'ा', 'ि', 'ी']),
+                    $this->simulationChallenge('Build kee.', 'की तयार करा.', ['क', 'ी'], ['क', 'ि', 'ी', 'ु']),
+                    $this->simulationChallenge('Build koo.', 'कू तयार करा.', ['क', 'ू'], ['क', 'ु', 'ू', 'े']),
+                ],
+            ),
+            $this->tokenSimulationDefinition(
+                'WORD_BUILDING_SIMULATION',
+                'Word Building',
+                'शब्द बांधणी',
+                'Arrange syllables to build a word.',
+                'अक्षरगट योग्य क्रमाने लावून शब्द बांधा.',
+                '🧱',
+                ['WORD_FORMATION' => 1, 'WORD_RECOGNITION' => 1],
+                [
+                    $this->simulationChallenge('Build the word school.', 'शाळा हा शब्द बांधा.', ['शा', 'ळा'], ['शा', 'ळा', 'ला']),
+                    $this->simulationChallenge('Build the word butterfly.', 'फुलपाखरू हा शब्द बांधा.', ['फुल', 'पा', 'खरू'], ['फुल', 'पा', 'खरू', 'घर']),
+                    $this->simulationChallenge('Build the word rainbow.', 'इंद्रधनुष्य हा शब्द बांधा.', ['इंद्र', 'धनु', 'ष्य'], ['इंद्र', 'धनु', 'ष्य', 'सूर्य']),
+                ],
+            ),
+            $this->tokenSimulationDefinition(
+                'SENTENCE_BUILDING_SIMULATION',
+                'Sentence Building',
+                'वाक्य बांधणी',
+                'Arrange words to build a meaningful sentence.',
+                'शब्द योग्य क्रमाने लावून अर्थपूर्ण वाक्य बांधा.',
+                '📝',
+                ['SENTENCE_FORMATION' => 1, 'SENTENCE_READING' => 1],
+                [
+                    $this->simulationChallenge('Build the sentence.', 'मी शाळेत जातो. हे वाक्य बांधा.', ['मी', 'शाळेत', 'जातो'], ['जातो', 'मी', 'खेळतो', 'शाळेत']),
+                    $this->simulationChallenge('Build the sentence.', 'पक्षी आकाशात उडतो. हे वाक्य बांधा.', ['पक्षी', 'आकाशात', 'उडतो'], ['उडतो', 'पक्षी', 'आकाशात', 'पाणी']),
+                    $this->simulationChallenge('Build the sentence.', 'आई गोष्ट सांगते. हे वाक्य बांधा.', ['आई', 'गोष्ट', 'सांगते'], ['गोष्ट', 'आई', 'सांगते', 'वाचतो']),
+                ],
+            ),
+            $this->tokenSimulationDefinition(
+                'PICTURE_SENTENCE_SIMULATION',
+                'Picture to Sentence',
+                'चित्रातून वाक्य तयार करा',
+                'Use word tiles to describe a picture.',
+                'चित्र पाहून शब्दफलकांनी वाक्य तयार करा.',
+                '🖼️',
+                ['SENTENCE_FORMATION' => 1, 'COMPREHENSION' => 1],
+                [
+                    $this->simulationChallenge('Describe the picture.', 'चित्र पाहून वाक्य तयार करा.', ['मुलगा', 'चेंडू', 'खेळतो'], ['चेंडू', 'मुलगा', 'खेळतो', 'वाचतो'], '👦 ⚽'),
+                    $this->simulationChallenge('Describe the picture.', 'चित्र पाहून वाक्य तयार करा.', ['मुलगी', 'पुस्तक', 'वाचते'], ['वाचते', 'मुलगी', 'पुस्तक', 'धावते'], '👧 📖'),
+                    $this->simulationChallenge('Describe the picture.', 'चित्र पाहून वाक्य तयार करा.', ['गाय', 'गवत', 'खाते'], ['गवत', 'गाय', 'खाते', 'उडते'], '🐄 🌿'),
+                ],
+            ),
+        ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $skills
+     * @return array<string, mixed>
+     */
+    private function simulationDefinition(
+        string $code,
+        string $engineKey,
+        string $title,
+        string $titleMarathi,
+        string $description,
+        string $descriptionMarathi,
+        string $icon,
+        array $skills,
+        array $configuration = [],
+    ): array {
+        return [
+            'code' => $code,
+            'engine_key' => $engineKey,
+            'title' => $title,
+            'title_marathi' => $titleMarathi,
+            'description' => $description,
+            'description_marathi' => $descriptionMarathi,
+            'icon' => $icon,
+            'skills' => $skills,
+            'configuration' => $configuration,
+        ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $skills
+     * @param  list<array<string, mixed>>  $challenges
+     * @return array<string, mixed>
+     */
+    private function tokenSimulationDefinition(
+        string $code,
+        string $title,
+        string $titleMarathi,
+        string $description,
+        string $descriptionMarathi,
+        string $icon,
+        array $skills,
+        array $challenges,
+    ): array {
+        return $this->simulationDefinition(
+            $code,
+            'token_builder',
+            $title,
+            $titleMarathi,
+            $description,
+            $descriptionMarathi,
+            $icon,
+            $skills,
+            ['challenges' => $challenges],
+        );
+    }
+
+    /**
+     * @param  list<string>  $answer
+     * @param  list<string>  $tokens
+     * @return array<string, mixed>
+     */
+    private function simulationChallenge(
+        string $prompt,
+        string $promptMarathi,
+        array $answer,
+        array $tokens,
+        ?string $visual = null,
+    ): array {
+        return compact('prompt', 'answer', 'tokens', 'visual') + [
+            'prompt_marathi' => $promptMarathi,
+        ];
     }
 
     /**

@@ -20,6 +20,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentGameController;
 use App\Http\Controllers\StudentMentorAssignmentController;
 use App\Http\Controllers\StudentPracticeController;
+use App\Http\Controllers\StudentSimulationController;
 use App\Http\Controllers\SubjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +119,20 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             ->name('games.sessions.finish');
         Route::get('game-sessions/{game_session}/result', [StudentGameController::class, 'result'])
             ->name('games.sessions.result');
+        Route::get('simulations', [StudentSimulationController::class, 'index'])
+            ->name('simulations.index');
+        Route::post('simulations/{simulation}/start', [StudentSimulationController::class, 'start'])
+            ->name('simulations.start');
+        Route::get('simulation-sessions/{simulation_session}', [StudentSimulationController::class, 'show'])
+            ->name('simulations.sessions.show');
+        Route::post(
+            'simulation-sessions/{simulation_session}/challenges/{simulation_challenge}',
+            [StudentSimulationController::class, 'submit'],
+        )->middleware('throttle:60,1')->name('simulations.sessions.submit');
+        Route::get(
+            'simulation-sessions/{simulation_session}/result',
+            [StudentSimulationController::class, 'result'],
+        )->name('simulations.sessions.result');
         Route::get('assessments', [StudentAssessmentController::class, 'index'])
             ->name('assessments.index');
         Route::post('assessments/{test}/start', [StudentAssessmentController::class, 'start'])

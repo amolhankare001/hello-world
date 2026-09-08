@@ -12,6 +12,7 @@ use App\Models\PracticeActivity;
 use App\Models\Question;
 use App\Models\Role;
 use App\Models\School;
+use App\Models\Simulation;
 use App\Models\Skill;
 use App\Models\SkillLevel;
 use App\Models\Student;
@@ -22,6 +23,7 @@ use App\Models\Subject;
 use App\Models\Test;
 use App\Models\User;
 use App\Services\GameQuestionProvider;
+use App\Services\SimulationChallengeProvider;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
@@ -50,6 +52,7 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(3, Test::query()->count());
         $this->assertSame(21, Game::query()->count());
         $this->assertSame(63, GameLevel::query()->count());
+        $this->assertSame(17, Simulation::query()->count());
         $this->assertSame(
             [
                 'ADDITION_ADVENTURE',
@@ -75,6 +78,28 @@ class DatabaseSeederTest extends TestCase
                 'WORD_TRAIN',
             ],
             Game::query()->orderBy('code')->pluck('code')->all(),
+        );
+        $this->assertSame(
+            [
+                'ADDITION_OBJECTS_SIMULATION',
+                'BARAKHADI_BUILDER_SIMULATION',
+                'CLOCK_SIMULATION',
+                'DIVISION_SHARING_SIMULATION',
+                'FRACTION_PIZZA_SIMULATION',
+                'GEOMETRY_BUILDER_SIMULATION',
+                'LETTER_JOINING_SIMULATION',
+                'MATRA_CHANGE_SIMULATION',
+                'MEASUREMENT_SIMULATION',
+                'MONEY_SIMULATION',
+                'MULTIPLICATION_ARRAYS_SIMULATION',
+                'NUMBER_LINE_SIMULATION',
+                'PICTURE_SENTENCE_SIMULATION',
+                'PLACE_VALUE_BLOCKS_SIMULATION',
+                'SENTENCE_BUILDING_SIMULATION',
+                'SUBTRACTION_OBJECTS_SIMULATION',
+                'WORD_BUILDING_SIMULATION',
+            ],
+            Simulation::query()->orderBy('code')->pluck('code')->all(),
         );
         $this->assertSame(450, StudentSkillProgress::query()->count());
         $this->assertSame(18, User::query()->count());
@@ -103,6 +128,26 @@ class DatabaseSeederTest extends TestCase
                         collect($question['choices'])->pluck('value')->all(),
                         $game->code,
                     );
+                }
+            });
+    }
+
+    public function test_every_seeded_simulation_generates_a_valid_interactive_round(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $challengeProvider = app(SimulationChallengeProvider::class);
+
+        Simulation::query()
+            ->with('skills')
+            ->orderBy('code')
+            ->get()
+            ->each(function (Simulation $simulation) use ($challengeProvider): void {
+                $challenges = $challengeProvider->generate($simulation, 1, $simulation->skills);
+
+                $this->assertCount(5, $challenges, $simulation->code);
+                foreach ($challenges as $challenge) {
+                    $this->assertNotEmpty(data_get($challenge, 'interaction.type'), $simulation->code);
+                    $this->assertNotEmpty($challenge['expected_state'], $simulation->code);
                 }
             });
     }

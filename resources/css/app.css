@@ -156,6 +156,377 @@ a:focus-visible {
     }
 }
 
+.simulation-catalog-card {
+    border: 0;
+    overflow: hidden;
+}
+
+.simulation-catalog-icon {
+    display: grid;
+    width: 4rem;
+    height: 4rem;
+    place-items: center;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, #dcfce7, #dbeafe);
+    font-size: 2rem;
+}
+
+.simulation-stage {
+    min-height: 36rem;
+    padding: clamp(1rem, 4vw, 2.5rem);
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top right, rgb(34 197 94 / 12%), transparent 25rem),
+        #fff;
+}
+
+.simulation-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.simulation-stats > div {
+    display: flex;
+    min-height: 4.5rem;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    background: #f8fafc;
+    text-align: center;
+}
+
+.simulation-stats span {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.simulation-stats strong {
+    color: #166534;
+    font-size: 1.35rem;
+}
+
+.simulation-progress-track {
+    height: 0.65rem;
+    margin-top: 1rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.simulation-progress-track > span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #22c55e, #0ea5e9);
+    transition: width 250ms ease;
+}
+
+.simulation-prompt-wrap {
+    max-width: 52rem;
+    margin: 2rem auto 1.5rem;
+    text-align: center;
+}
+
+.simulation-prompt {
+    margin-bottom: 0.5rem;
+    color: #0f172a;
+    font-size: clamp(1.5rem, 4vw, 2.35rem);
+}
+
+.simulation-context,
+.simulation-target {
+    margin-bottom: 0.75rem;
+    color: #7c3aed;
+    font-size: clamp(1.5rem, 5vw, 2.75rem);
+    font-weight: 800;
+}
+
+.simulation-context {
+    color: #334155;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.simulation-workspace {
+    max-width: 54rem;
+    min-height: 15rem;
+    margin: 0 auto;
+    padding: clamp(1rem, 4vw, 2rem);
+    border: 2px dashed #86efac;
+    border-radius: 1.5rem;
+    background: rgb(240 253 244 / 72%);
+    text-align: center;
+}
+
+.simulation-live-value {
+    display: block;
+    margin-bottom: 1rem;
+    color: #166534;
+    font-size: clamp(2rem, 8vw, 4rem);
+}
+
+.simulation-counter-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.simulation-counter-controls .simulation-live-value {
+    min-width: 5rem;
+    margin: 0;
+}
+
+.simulation-step-button {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1.25rem;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.simulation-object-field {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 5rem;
+    margin-top: 1.5rem;
+}
+
+.simulation-object {
+    font-size: clamp(1.65rem, 6vw, 2.5rem);
+    animation: simulation-pop 180ms ease-out;
+}
+
+.simulation-share-group {
+    min-width: 7rem;
+    min-height: 5rem;
+    padding: 0.75rem;
+    border: 2px solid #60a5fa;
+    border-radius: 1rem;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 1.4rem;
+    letter-spacing: 0.2rem;
+}
+
+.simulation-range {
+    min-height: 3rem;
+    touch-action: pan-y;
+}
+
+.simulation-number-line,
+.simulation-ruler {
+    position: relative;
+    height: 1rem;
+    margin: 2rem 0 1rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+.simulation-number-line::after,
+.simulation-ruler::after {
+    position: absolute;
+    top: 50%;
+    left: var(--simulation-position);
+    width: 2rem;
+    height: 2rem;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    background: #f97316;
+    box-shadow: 0 0 0 2px #f97316;
+    content: "";
+    transform: translate(-50%, -50%);
+    transition: left 100ms ease;
+}
+
+.simulation-money-field,
+.simulation-token-palette,
+.simulation-clock-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.simulation-money-button,
+.simulation-token {
+    min-height: 3.5rem;
+    min-width: 4.5rem;
+    border-radius: 1rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    touch-action: manipulation;
+}
+
+.simulation-place-value {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.simulation-place-column {
+    display: grid;
+    gap: 0.65rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 0.5rem 1.5rem rgb(15 23 42 / 8%);
+}
+
+.simulation-place-column span {
+    color: #475569;
+    font-weight: 700;
+}
+
+.simulation-place-column strong {
+    font-size: 2rem;
+}
+
+.simulation-array-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.simulation-array-controls > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    background: #fff;
+}
+
+.simulation-array-controls span {
+    font-weight: 700;
+}
+
+.simulation-array-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--simulation-columns), 1.5rem);
+    justify-content: center;
+    gap: 0.35rem;
+    margin-top: 1.5rem;
+    color: #7c3aed;
+    font-size: 1.35rem;
+}
+
+.simulation-clock {
+    position: relative;
+    width: 12rem;
+    height: 12rem;
+    margin: 1rem auto 1.5rem;
+    border: 0.65rem solid #334155;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: inset 0 0 0 0.25rem #e2e8f0;
+}
+
+.simulation-clock::before,
+.simulation-clock::after {
+    position: absolute;
+    bottom: 50%;
+    left: calc(50% - 0.18rem);
+    width: 0.36rem;
+    border-radius: 999px;
+    background: #0f172a;
+    content: "";
+    transform-origin: 50% 100%;
+}
+
+.simulation-clock::before {
+    height: 3.4rem;
+    transform: rotate(var(--hour-angle));
+}
+
+.simulation-clock::after {
+    height: 4.7rem;
+    background: #ef4444;
+    transform: rotate(var(--minute-angle));
+}
+
+.simulation-build-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 7rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 2px solid #93c5fd;
+    border-radius: 1rem;
+    background: #fff;
+}
+
+.simulation-built-token {
+    min-height: 3rem;
+    font-size: 1.2rem;
+    animation: simulation-pop 180ms ease-out;
+}
+
+.simulation-feedback {
+    display: flex;
+    max-width: 40rem;
+    margin: 0 auto 1rem;
+    flex-direction: column;
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+}
+
+.simulation-feedback-success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.simulation-feedback-encouragement {
+    background: #fff7ed;
+    color: #9a3412;
+}
+
+.simulation-result-icon {
+    display: grid;
+    width: 6rem;
+    height: 6rem;
+    place-items: center;
+    border-radius: 2rem;
+    background: #dcfce7;
+    font-size: 3rem;
+}
+
+@keyframes simulation-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .simulation-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .simulation-place-value {
+        gap: 0.5rem;
+    }
+
+    .simulation-place-column {
+        padding: 0.65rem;
+    }
+
+    .simulation-workspace {
+        min-height: 13rem;
+    }
+}
+
 .game-catalog-card {
     background:
         radial-gradient(circle at 100% 0, rgb(255 193 7 / 18%), transparent 11rem),

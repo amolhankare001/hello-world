@@ -34,6 +34,7 @@
                     @if (auth()->user()->hasRole(\App\Enums\RoleCode::Student))
                         <a class="nav-link" href="{{ route('practice.index') }}">सराव</a>
                         <a class="nav-link" href="{{ route('games.index') }}">खेळ</a>
+                        <a class="nav-link" href="{{ route('simulations.index') }}">अनुकरणे</a>
                         <a class="nav-link" href="{{ route('assessments.index') }}">चाचण्या</a>
                     @endif
                     <span class="navbar-text">{{ auth()->user()->name }}</span>

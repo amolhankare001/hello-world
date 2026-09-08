@@ -11,6 +11,9 @@ use App\Models\Mentor;
 use App\Models\PracticeAttempt;
 use App\Models\Question;
 use App\Models\SchoolClass;
+use App\Models\Simulation;
+use App\Models\SimulationChallenge;
+use App\Models\SimulationSession;
 use App\Models\Skill;
 use App\Models\SkillLevel;
 use App\Models\Student;
@@ -54,6 +57,11 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('game', fn (string $value): Model => Game::query()->where('code', $value)->firstOrFail());
         Route::bind('game_session', fn (string $value): Model => $this->studentGameSession($value));
         Route::bind('game_question', fn (string $value): Model => $this->gameQuestion($value));
+        Route::bind('simulation', fn (string $value): Model => Simulation::query()
+            ->where('code', $value)
+            ->firstOrFail());
+        Route::bind('simulation_session', fn (string $value): Model => $this->studentSimulationSession($value));
+        Route::bind('simulation_challenge', fn (string $value): Model => $this->simulationChallenge($value));
         Route::bind('test', fn (string $value): Model => $this->contentTest($value));
         Route::bind('student_test_attempt', fn (string $value): Model => $this->studentTestAttempt($value));
         Route::bind('test_attempt', fn (string $value): Model => $this->assessmentAttempt($value));
@@ -163,6 +171,30 @@ class AppServiceProvider extends ServiceProvider
         $session = request()->route('game_session');
 
         if ($session instanceof GameSession) {
+            $query->whereBelongsTo($session, 'session');
+        }
+
+        return $query->findOrFail($value);
+    }
+
+    private function studentSimulationSession(string $value): Model
+    {
+        /** @var User|null $user */
+        $user = request()->user();
+        $studentId = $user?->student()->value('id');
+
+        return SimulationSession::query()
+            ->where('student_id', $studentId ?? 0)
+            ->where('session_key', $value)
+            ->firstOrFail();
+    }
+
+    private function simulationChallenge(string $value): Model
+    {
+        $query = SimulationChallenge::query();
+        $session = request()->route('simulation_session');
+
+        if ($session instanceof SimulationSession) {
             $query->whereBelongsTo($session, 'session');
         }
 
