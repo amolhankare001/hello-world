@@ -29,6 +29,9 @@
                     @if (auth()->user()->hasRole(\App\Enums\RoleCode::SuperAdmin, \App\Enums\RoleCode::SchoolAdmin, \App\Enums\RoleCode::Mentor))
                         <a class="nav-link" href="{{ route('activities.index') }}">उपक्रम</a>
                     @endif
+                    @if (auth()->user()->hasRole(\App\Enums\RoleCode::Student))
+                        <a class="nav-link" href="{{ route('practice.index') }}">सराव</a>
+                    @endif
                     <span class="navbar-text">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

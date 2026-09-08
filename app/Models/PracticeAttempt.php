@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PracticeAttempt extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'attempt_key', 'practice_activity_id', 'student_id', 'academic_year_id', 'status',
         'difficulty', 'started_at', 'completed_at', 'correct_count', 'incorrect_count',
@@ -29,5 +32,15 @@ class PracticeAttempt extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'attempt_key';
     }
 }

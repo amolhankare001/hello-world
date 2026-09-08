@@ -169,6 +169,7 @@ class DatabaseSeeder extends Seeder
                 ['GEOMETRIC_SHAPES', 'Geometric shapes', 'भूमितीय आकार'],
                 ['WORD_PROBLEMS', 'Word problems', 'शब्दसमस्या'],
             ]);
+            $this->createDemoPracticeContent($platformAdministrator);
 
             Badge::query()->create([
                 'code' => 'FIRST_STEP',
@@ -259,6 +260,133 @@ class DatabaseSeeder extends Seeder
                 'max_score' => 0,
                 'status' => 'published',
                 'published_at' => now(),
+            ]);
+        }
+    }
+
+    private function createDemoPracticeContent(User $creator): void
+    {
+        $vowels = Skill::query()->where('code', 'VOWELS')->firstOrFail();
+        $vowelError = $vowels->errorTypes()->create([
+            'code' => 'VOWEL_IDENTIFICATION',
+            'name' => 'Vowel identification error',
+            'name_marathi' => 'स्वर ओळख चूक',
+            'description' => 'The student selected a consonant or an unrelated symbol.',
+            'remediation' => ['hint' => 'Review अ, आ, इ, ई before trying again.'],
+        ]);
+        $vowelActivity = Activity::query()->create([
+            'skill_id' => $vowels->id,
+            'skill_level_id' => $vowels->levels()->where('level', 1)->value('id'),
+            'created_by' => $creator->id,
+            'code' => 'MARATHI_VOWELS_PRACTICE_1',
+            'type' => 'practice',
+            'title' => 'Recognize Marathi vowels',
+            'title_marathi' => 'मराठी स्वर ओळखा',
+            'instructions' => 'Choose or type the correct vowel.',
+            'instructions_marathi' => 'योग्य स्वर निवडा किंवा लिहा.',
+            'content' => ['body' => null, 'body_marathi' => null, 'examples' => ['अ, आ, इ, ई']],
+            'difficulty' => 1,
+            'estimated_minutes' => 5,
+            'max_score' => 10,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+        $vowelActivity->practiceActivity()->create([
+            'question_count' => 3,
+            'randomize_questions' => true,
+            'show_feedback_immediately' => true,
+            'configuration' => [
+                'difficulty_up_accuracy' => 80,
+                'remedial_accuracy' => 60,
+                'minimum_difficulty' => 1,
+                'maximum_difficulty' => 5,
+            ],
+        ]);
+        $vowelQuestion = $vowelActivity->questions()->create([
+            'skill_id' => $vowels->id,
+            'error_type_id' => $vowelError->id,
+            'created_by' => $creator->id,
+            'type' => 'mcq',
+            'prompt' => 'Which of these is a Marathi vowel?',
+            'prompt_marathi' => 'यापैकी मराठी स्वर कोणता?',
+            'correct_answer' => [],
+            'explanation' => 'अ is a vowel.',
+            'explanation_marathi' => 'अ हा स्वर आहे.',
+            'difficulty' => 1,
+            'marks' => 1,
+            'is_active' => true,
+        ]);
+        $vowelQuestion->options()->createMany([
+            ['label' => 'अ', 'label_marathi' => 'अ', 'is_correct' => true, 'sort_order' => 1],
+            ['label' => 'क', 'label_marathi' => 'क', 'is_correct' => false, 'sort_order' => 2],
+            ['label' => 'म', 'label_marathi' => 'म', 'is_correct' => false, 'sort_order' => 3],
+        ]);
+        foreach ([['आ', 'आ'], ['इ', 'इ']] as $index => [$answer, $marathiAnswer]) {
+            $vowelActivity->questions()->create([
+                'skill_id' => $vowels->id,
+                'error_type_id' => $vowelError->id,
+                'created_by' => $creator->id,
+                'type' => 'text_input',
+                'prompt' => $index === 0 ? 'Type the long A vowel.' : 'Type the short I vowel.',
+                'prompt_marathi' => $index === 0 ? 'दीर्घ आ स्वर लिहा.' : 'ऱ्हस्व इ स्वर लिहा.',
+                'correct_answer' => ['accepted' => [$answer, $marathiAnswer]],
+                'explanation_marathi' => "योग्य उत्तर {$answer} आहे.",
+                'difficulty' => 1,
+                'marks' => 1,
+                'is_active' => true,
+            ]);
+        }
+
+        $addition = Skill::query()->where('code', 'ADDITION')->firstOrFail();
+        $additionError = $addition->errorTypes()->create([
+            'code' => 'ADDITION_FACT',
+            'name' => 'Addition fact error',
+            'name_marathi' => 'बेरीज तथ्य चूक',
+            'description' => 'The student needs support combining small quantities.',
+            'remediation' => ['hint' => 'Count both groups using objects or fingers.'],
+        ]);
+        $additionActivity = Activity::query()->create([
+            'skill_id' => $addition->id,
+            'skill_level_id' => $addition->levels()->where('level', 1)->value('id'),
+            'created_by' => $creator->id,
+            'code' => 'MATHEMATICS_ADDITION_PRACTICE_1',
+            'type' => 'practice',
+            'title' => 'Addition within ten',
+            'title_marathi' => 'दहाच्या आतील बेरीज',
+            'instructions' => 'Solve each addition question.',
+            'instructions_marathi' => 'प्रत्येक बेरीज सोडवा.',
+            'content' => ['body' => null, 'body_marathi' => null, 'examples' => ['2 + 3 = 5']],
+            'difficulty' => 1,
+            'estimated_minutes' => 5,
+            'max_score' => 10,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+        $additionActivity->practiceActivity()->create([
+            'question_count' => 3,
+            'randomize_questions' => true,
+            'show_feedback_immediately' => true,
+            'configuration' => [
+                'difficulty_up_accuracy' => 80,
+                'remedial_accuracy' => 60,
+                'minimum_difficulty' => 1,
+                'maximum_difficulty' => 5,
+            ],
+        ]);
+        foreach ([[2, 3, 5], [4, 2, 6], [7, 1, 8]] as [$first, $second, $answer]) {
+            $additionActivity->questions()->create([
+                'skill_id' => $addition->id,
+                'error_type_id' => $additionError->id,
+                'created_by' => $creator->id,
+                'type' => 'number_input',
+                'prompt' => "What is {$first} + {$second}?",
+                'prompt_marathi' => "{$first} + {$second} किती?",
+                'correct_answer' => ['value' => $answer],
+                'explanation' => "{$first} plus {$second} equals {$answer}.",
+                'explanation_marathi' => "{$first} अधिक {$second} बरोबर {$answer}.",
+                'difficulty' => 1,
+                'marks' => 1,
+                'is_active' => true,
             ]);
         }
     }

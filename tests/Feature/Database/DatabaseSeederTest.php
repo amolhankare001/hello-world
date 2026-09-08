@@ -6,6 +6,8 @@ use App\Enums\RoleCode;
 use App\Models\AcademicYear;
 use App\Models\Activity;
 use App\Models\Mentor;
+use App\Models\PracticeActivity;
+use App\Models\Question;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\Skill;
@@ -24,7 +26,7 @@ class DatabaseSeederTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_creates_the_complete_phase_one_demo_dataset(): void
+    public function test_creates_the_complete_demo_dataset(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -38,7 +40,9 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(2, Subject::query()->count());
         $this->assertSame(30, Skill::query()->count());
         $this->assertSame(90, SkillLevel::query()->count());
-        $this->assertSame(30, Activity::query()->count());
+        $this->assertSame(32, Activity::query()->count());
+        $this->assertSame(2, PracticeActivity::query()->count());
+        $this->assertSame(6, Question::query()->count());
         $this->assertSame(450, StudentSkillProgress::query()->count());
         $this->assertSame(18, User::query()->count());
         $this->assertSame(

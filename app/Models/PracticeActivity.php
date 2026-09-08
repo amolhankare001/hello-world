@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PracticeActivity extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'activity_id', 'question_count', 'randomize_questions', 'show_feedback_immediately', 'configuration',
     ];

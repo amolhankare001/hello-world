@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Enums\RoleCode;
 use App\Models\Activity;
 use App\Models\Mentor;
+use App\Models\PracticeAttempt;
+use App\Models\Question;
 use App\Models\SchoolClass;
 use App\Models\Skill;
 use App\Models\SkillLevel;
@@ -42,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('skill', fn (string $value): Model => $this->contentSkill($value));
         Route::bind('skill_level', fn (string $value): Model => $this->contentSkillLevel($value));
         Route::bind('activity', fn (string $value): Model => $this->contentActivity($value));
+        Route::bind('question', fn (string $value): Model => $this->contentQuestion($value));
+        Route::bind('practice_attempt', fn (string $value): Model => $this->studentPracticeAttempt($value));
     }
 
     private function tenantModel(Builder $query, string $value): Model
@@ -96,6 +100,30 @@ class AppServiceProvider extends ServiceProvider
         $this->scopeContentQuery($query);
 
         return $query->findOrFail($value);
+    }
+
+    private function contentQuestion(string $value): Model
+    {
+        $query = Question::query();
+        $activity = request()->route('activity');
+
+        if ($activity instanceof Activity) {
+            $query->whereBelongsTo($activity);
+        }
+
+        return $query->findOrFail($value);
+    }
+
+    private function studentPracticeAttempt(string $value): Model
+    {
+        /** @var User|null $user */
+        $user = request()->user();
+        $studentId = $user?->student()->value('id');
+
+        return PracticeAttempt::query()
+            ->where('student_id', $studentId ?? 0)
+            ->where('attempt_key', $value)
+            ->firstOrFail();
     }
 
     private function scopeContentQuery(Builder $query, ?string $relationship = null): void

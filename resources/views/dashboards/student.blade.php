@@ -17,10 +17,11 @@
             </div></article>
         </div>
         <div class="col-md-6">
-            <article class="card portal-card h-100"><div class="card-body">
+            <article class="card portal-card h-100"><div class="card-body d-flex flex-column">
                 <h2 class="h5">कौशल्य प्रगती</h2>
                 <p class="display-6 fw-bold mb-1">{{ $trackedSkillCount }}</p>
-                <p class="text-secondary mb-0">कौशल्यांची वैयक्तिक नोंद सुरू आहे.</p>
+                <p class="text-secondary">कौशल्यांची वैयक्तिक नोंद सुरू आहे.</p>
+                <a class="btn btn-primary mt-auto" href="{{ route('practice.index') }}">सराव निवडा</a>
             </div></article>
         </div>
     </div>

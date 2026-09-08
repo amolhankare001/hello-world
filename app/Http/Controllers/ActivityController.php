@@ -6,12 +6,14 @@ use App\Enums\RoleCode;
 use App\Http\Requests\Content\StoreActivityRequest;
 use App\Http\Requests\Content\UpdateActivityRequest;
 use App\Models\Activity;
+use App\Models\ErrorType;
 use App\Models\School;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -50,7 +52,15 @@ class ActivityController extends Controller
 
     public function store(StoreActivityRequest $request, AuditLogger $auditLogger): RedirectResponse
     {
-        $activity = Activity::query()->create($this->attributes($request, $request->validated()));
+        $activity = DB::transaction(function () use ($request): Activity {
+            $activity = Activity::query()->create($this->attributes($request, $request->validated()));
+
+            if ($activity->type === 'practice') {
+                $activity->practiceActivity()->create($this->practiceDefaults());
+            }
+
+            return $activity;
+        });
         $auditLogger->record($request->user(), 'activity.created', $request, $activity);
 
         return redirect()->route('activities.edit', $activity)->with('status', 'Activity created successfully.');
@@ -66,9 +76,20 @@ class ActivityController extends Controller
     public function edit(Activity $activity): View
     {
         Gate::authorize('update', $activity);
+        $activity->load([
+            'practiceActivity',
+            'questions' => fn ($query) => $query
+                ->with('errorType:id,name,name_marathi')
+                ->orderBy('difficulty')
+                ->orderBy('id'),
+        ]);
 
         return view('content.activities.edit', [
             'activity' => $activity,
+            'errorTypes' => ErrorType::query()
+                ->where('skill_id', $activity->skill_id)
+                ->orderBy('name')
+                ->get(),
             ...$this->formData(request()->user()),
         ]);
     }
@@ -78,7 +99,13 @@ class ActivityController extends Controller
         Activity $activity,
         AuditLogger $auditLogger,
     ): RedirectResponse {
-        $activity->update($this->attributes($request, $request->validated(), $activity));
+        DB::transaction(function () use ($request, $activity): void {
+            $activity->update($this->attributes($request, $request->validated(), $activity));
+
+            if ($activity->type === 'practice') {
+                $activity->practiceActivity()->firstOrCreate([], $this->practiceDefaults());
+            }
+        });
         $auditLogger->record($request->user(), 'activity.updated', $request, $activity);
 
         return redirect()->route('activities.edit', $activity)->with('status', 'Activity updated successfully.');
@@ -159,6 +186,24 @@ class ActivityController extends Controller
             'max_score' => $validated['max_score'],
             'status' => $status,
             'published_at' => $status === 'published' ? ($activity?->published_at ?? now()) : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function practiceDefaults(): array
+    {
+        return [
+            'question_count' => 10,
+            'randomize_questions' => true,
+            'show_feedback_immediately' => true,
+            'configuration' => [
+                'difficulty_up_accuracy' => 80,
+                'remedial_accuracy' => 60,
+                'minimum_difficulty' => 1,
+                'maximum_difficulty' => 5,
+            ],
         ];
     }
 }

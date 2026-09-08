@@ -44,4 +44,9 @@ class Skill extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    public function errorTypes(): HasMany
+    {
+        return $this->hasMany(ErrorType::class);
+    }
 }

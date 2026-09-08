@@ -8,12 +8,15 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\MentorController;
+use App\Http\Controllers\PracticeActivityController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SkillController;
 use App\Http\Controllers\SkillLevelController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentMentorAssignmentController;
+use App\Http\Controllers\StudentPracticeController;
 use App\Http\Controllers\SubjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +80,34 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             RoleCode::SchoolAdmin->value,
             RoleCode::Mentor->value,
         ]));
+    Route::middleware('role:'.implode(',', [
+        RoleCode::SuperAdmin->value,
+        RoleCode::SchoolAdmin->value,
+        RoleCode::Mentor->value,
+    ]))->group(function (): void {
+        Route::put('activities/{activity}/practice', [PracticeActivityController::class, 'update'])
+            ->name('activities.practice.update');
+        Route::post('activities/{activity}/questions', [QuestionController::class, 'store'])
+            ->name('activities.questions.store');
+        Route::get('activities/{activity}/questions/{question}/edit', [QuestionController::class, 'edit'])
+            ->scopeBindings()
+            ->name('activities.questions.edit');
+        Route::put('activities/{activity}/questions/{question}', [QuestionController::class, 'update'])
+            ->scopeBindings()
+            ->name('activities.questions.update');
+    });
+
+    Route::middleware('role:'.RoleCode::Student->value)->group(function (): void {
+        Route::get('practice', [StudentPracticeController::class, 'index'])->name('practice.index');
+        Route::post('practice/{activity}/start', [StudentPracticeController::class, 'start'])
+            ->name('practice.start');
+        Route::get('practice-attempts/{practice_attempt}', [StudentPracticeController::class, 'show'])
+            ->name('practice.attempts.show');
+        Route::post('practice-attempts/{practice_attempt}', [StudentPracticeController::class, 'submit'])
+            ->name('practice.attempts.submit');
+        Route::get('practice-attempts/{practice_attempt}/result', [StudentPracticeController::class, 'result'])
+            ->name('practice.attempts.result');
+    });
 
     Route::middleware('role:'.RoleCode::SchoolAdmin->value)->group(function (): void {
         Route::resource('school-classes', SchoolClassController::class)->except('destroy');

@@ -55,4 +55,9 @@ class Student extends Model
     {
         return $this->hasMany(StudentSkillEvent::class);
     }
+
+    public function practiceAttempts(): HasMany
+    {
+        return $this->hasMany(PracticeAttempt::class);
+    }
 }
