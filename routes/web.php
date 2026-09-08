@@ -5,6 +5,12 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\MentorController;
+use App\Http\Controllers\SchoolClassController;
+use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentMentorAssignmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -34,5 +40,23 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/student/dashboard', DashboardController::class)
         ->middleware('role:'.RoleCode::Student->value)
         ->name('student.dashboard');
+
+    Route::resource('schools', SchoolController::class)
+        ->except('destroy')
+        ->middleware('role:'.RoleCode::SuperAdmin->value);
+
+    Route::middleware('role:'.RoleCode::SchoolAdmin->value)->group(function (): void {
+        Route::resource('school-classes', SchoolClassController::class)->except('destroy');
+        Route::post('school-classes/{school_class}/divisions', [DivisionController::class, 'store'])
+            ->name('school-classes.divisions.store');
+        Route::put('school-classes/{school_class}/divisions/{division}', [DivisionController::class, 'update'])
+            ->scopeBindings()
+            ->name('school-classes.divisions.update');
+        Route::resource('students', StudentController::class)->except('destroy');
+        Route::post('students/{student}/mentor-assignment', [StudentMentorAssignmentController::class, 'store'])
+            ->name('students.mentor-assignment.store');
+        Route::resource('mentors', MentorController::class)->except('destroy');
+    });
+
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

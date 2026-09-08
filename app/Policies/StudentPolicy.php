@@ -39,16 +39,23 @@ class StudentPolicy
         }
 
         if ($user->hasRole(RoleCode::Student)) {
-            return $user->student?->is($student) ?? false;
+            return $student->user_id === $user->id;
         }
 
-        if (! $user->hasRole(RoleCode::Mentor) || $user->mentor === null) {
+        if (! $user->hasRole(RoleCode::Mentor)) {
             return false;
         }
 
-        $date = now($user->school->timezone)->toDateString();
+        $mentor = $user->mentor()->first();
 
-        return $user->mentor->studentAssignments()
+        if ($mentor === null) {
+            return false;
+        }
+
+        $timezone = $user->school()->value('timezone') ?? config('app.timezone');
+        $date = now($timezone)->toDateString();
+
+        return $mentor->studentAssignments()
             ->activeOn($date)
             ->whereBelongsTo($student)
             ->exists();

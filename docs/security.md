@@ -6,7 +6,7 @@
 - School, student, and mentor policies enforce school boundaries. Student access is limited to the student's own profile, and mentor access requires a current dated assignment.
 - Game, simulation, practice, and assessment scores are server-authoritative. UUID session or attempt keys provide idempotency and replay protection.
 - Passwords use Laravel's configured hashing. Production sessions use secure, HTTP-only, same-site cookies over HTTPS.
-- Portfolio and media objects are private in S3 and are exposed only through short-lived signed URLs after authorization.
+- Portfolio and media objects must remain outside the public web root and be streamed only after authorization.
 - Audit logs record sensitive administrative changes without storing secrets.
 - Production secrets belong in the deployment secret store or instance environment, never source control.
 - Database encryption, automated backups, restore drills, dependency scanning, log retention, and alerting are release requirements.

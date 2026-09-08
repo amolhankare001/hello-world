@@ -17,6 +17,14 @@
 - Student policy coverage for own-profile, school-admin, current mentor-assignment, expired assignment, and cross-school denial.
 - School dashboard tenant-scoped counts and mentor dashboard current-assignment filtering.
 
+## Phase 3
+
+- Super-administrator school listing, creation, validation, and audit logging.
+- School-administrator class and division creation/update, including nested-record isolation.
+- Student account creation, enrollment, optional mentor assignment, skill-progress initialization, and cross-school validation.
+- Mentor account creation/update, password preservation, and school-scoped route binding.
+- Cross-school records return not found rather than revealing that another tenant owns them.
+
 ## Later phases
 
 Feature coverage will follow each vertical product slice:

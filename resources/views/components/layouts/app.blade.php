@@ -16,7 +16,15 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="portalNavigation">
-                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    @if (auth()->user()->hasRole(\App\Enums\RoleCode::SuperAdmin))
+                        <a class="nav-link" href="{{ route('schools.index') }}">शाळा</a>
+                    @endif
+                    @if (auth()->user()->hasRole(\App\Enums\RoleCode::SchoolAdmin))
+                        <a class="nav-link" href="{{ route('students.index') }}">विद्यार्थी</a>
+                        <a class="nav-link" href="{{ route('mentors.index') }}">मार्गदर्शक</a>
+                        <a class="nav-link" href="{{ route('school-classes.index') }}">वर्ग</a>
+                    @endif
                     <span class="navbar-text">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -29,6 +37,9 @@
         </div>
     </nav>
     <main class="container py-4">
+        @if (session('status'))
+            <div class="alert alert-success" role="status">{{ session('status') }}</div>
+        @endif
         {{ $slot }}
     </main>
 </body>
