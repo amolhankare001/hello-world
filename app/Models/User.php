@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\RoleCode;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -52,5 +52,34 @@ class User extends Authenticatable
     public function mentor(): HasOne
     {
         return $this->hasOne(Mentor::class);
+    }
+
+    public function hasRole(RoleCode ...$roles): bool
+    {
+        $roleCode = $this->role?->code;
+
+        return $roleCode !== null && in_array($roleCode, $roles, true);
+    }
+
+    public function canAccessPortal(): bool
+    {
+        if (! $this->is_active || $this->role === null) {
+            return false;
+        }
+
+        if ($this->hasRole(RoleCode::SuperAdmin)) {
+            return true;
+        }
+
+        if ($this->school === null || ! $this->school->is_active) {
+            return false;
+        }
+
+        return match ($this->role->code) {
+            RoleCode::Student => $this->student?->school_id === $this->school_id,
+            RoleCode::Mentor => $this->mentor?->school_id === $this->school_id,
+            RoleCode::SchoolAdmin => true,
+            default => false,
+        };
     }
 }

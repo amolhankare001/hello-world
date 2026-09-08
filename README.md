@@ -2,7 +2,7 @@
 
 A Laravel platform for personalized remedial Marathi and Mathematics learning, mentor intervention, and holistic student progress.
 
-Phase 1 establishes the architecture, normalized database, Eloquent domain model, representative seed data, Bootstrap frontend foundation, and development/deployment documentation. Authentication and product workflows are delivered in later phases.
+Phases 1–2 establish the architecture, normalized database, Eloquent domain model, representative seed data, Bootstrap frontend foundation, secure session authentication, password reset, role middleware, tenant-aware policies, protected role dashboards, and development/deployment documentation.
 
 ## Requirements
 
@@ -37,7 +37,9 @@ All seeded development accounts use the password `password`:
 | Mentor | `mentor@example.test` |
 | Students | `student1@example.test` through `student15@example.test` |
 
-These accounts are development fixtures only. Authentication UI is not part of Phase 1.
+These accounts are development fixtures only. Open `/login` and use the account for the role-specific dashboard you want to verify.
+
+Authentication rejects inactive users, users attached to inactive/deleted schools, roleless users, and student or mentor accounts without a matching school-owned profile. Login attempts are rate-limited by normalized email and IP address.
 
 ## Quality commands
 

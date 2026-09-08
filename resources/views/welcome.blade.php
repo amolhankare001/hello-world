@@ -18,6 +18,7 @@
                             Personalized learning, assessment, mentor support, and holistic progress in one
                             secure school platform.
                         </p>
+                        <a class="btn btn-primary btn-lg mb-4" href="{{ route('login') }}">सुरक्षित प्रवेश</a>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <div class="border rounded-4 p-3 h-100">

@@ -21,3 +21,19 @@ body {
     border-radius: 1rem;
     box-shadow: 0 0.75rem 2rem rgb(49 35 89 / 8%);
 }
+
+.btn-primary {
+    --bs-btn-bg: var(--portal-primary);
+    --bs-btn-border-color: var(--portal-primary);
+    --bs-btn-hover-bg: #4930a0;
+    --bs-btn-hover-border-color: #4930a0;
+}
+
+.form-control:focus,
+.form-check-input:focus,
+.btn:focus-visible,
+a:focus-visible {
+    border-color: var(--portal-primary);
+    box-shadow: 0 0 0 0.25rem rgb(91 60 196 / 20%);
+    outline: 0;
+}

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,5 +38,15 @@ class StudentMentorAssignment extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    #[Scope]
+    protected function activeOn(Builder $query, string $date): Builder
+    {
+        return $query
+            ->whereDate('assigned_on', '<=', $date)
+            ->where(function (Builder $query) use ($date): void {
+                $query->whereNull('ended_on')->orWhereDate('ended_on', '>=', $date);
+            });
     }
 }

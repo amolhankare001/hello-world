@@ -9,11 +9,18 @@
 - SQLite and MySQL schema compatibility.
 - Production frontend asset compilation.
 
+## Phase 2
+
+- Login form, valid and invalid credentials, inactive account/school denial, session rotation behavior, and audited logout.
+- Password-reset link delivery, generic unknown-account response, token-based password update, and password validation.
+- Role middleware for protected dashboards.
+- Student policy coverage for own-profile, school-admin, current mentor-assignment, expired assignment, and cross-school denial.
+- School dashboard tenant-scoped counts and mentor dashboard current-assignment filtering.
+
 ## Later phases
 
 Feature coverage will follow each vertical product slice:
 
-- Authentication, rate limiting, session rotation, and logout.
 - Role, school, mentor-assignment, and student isolation.
 - Question evaluation, attempts, duplicate submission, expiration, and refresh recovery.
 - Pre-test diagnosis, post-test improvement, mastery, recommendation, XP, streak, and badge calculations.
