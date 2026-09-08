@@ -21,6 +21,7 @@ use App\Models\StudentSkillProgress;
 use App\Models\Subject;
 use App\Models\Test;
 use App\Models\User;
+use App\Services\GameQuestionProvider;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
@@ -47,10 +48,32 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(2, PracticeActivity::query()->count());
         $this->assertSame(6, Question::query()->count());
         $this->assertSame(3, Test::query()->count());
-        $this->assertSame(2, Game::query()->count());
-        $this->assertSame(6, GameLevel::query()->count());
+        $this->assertSame(21, Game::query()->count());
+        $this->assertSame(63, GameLevel::query()->count());
         $this->assertSame(
-            ['AKSHAR_PAKDA', 'NUMBER_CATCH'],
+            [
+                'ADDITION_ADVENTURE',
+                'AKSHAR_PAKDA',
+                'BUILD_THE_WORD',
+                'DIVISION_SHARING_GAME',
+                'FIND_CORRECT_WORD',
+                'FRACTION_PIZZA',
+                'GREATER_OR_SMALLER',
+                'LISTEN_AND_SELECT',
+                'MATRA_BALLOONS',
+                'MULTIPLICATION_SPACE_MISSION',
+                'NUMBER_CATCH',
+                'NUMBER_LINE_JUMP',
+                'NUMBER_TRAIN',
+                'PICTURE_WORD_MATCH',
+                'PLACE_VALUE_HOUSE',
+                'READING_CHALLENGE',
+                'SENTENCE_MATCH',
+                'SHOPPING_GAME',
+                'SUBTRACTION_ADVENTURE',
+                'WORD_ORDER',
+                'WORD_TRAIN',
+            ],
             Game::query()->orderBy('code')->pluck('code')->all(),
         );
         $this->assertSame(450, StudentSkillProgress::query()->count());
@@ -59,5 +82,28 @@ class DatabaseSeederTest extends TestCase
             RoleCode::SuperAdmin,
             User::query()->where('email', 'admin@example.test')->firstOrFail()->role->code
         );
+    }
+
+    public function test_every_seeded_game_generates_a_valid_server_question_round(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $questionProvider = app(GameQuestionProvider::class);
+
+        Game::query()
+            ->with(['levels' => fn ($query) => $query->orderBy('level'), 'skills'])
+            ->orderBy('code')
+            ->get()
+            ->each(function (Game $game) use ($questionProvider): void {
+                $questions = $questionProvider->generate($game, $game->levels->firstOrFail(), $game->skills);
+
+                $this->assertCount(6, $questions, $game->code);
+                foreach ($questions as $question) {
+                    $this->assertContains(
+                        data_get($question, 'expected_answer.value'),
+                        collect($question['choices'])->pluck('value')->all(),
+                        $game->code,
+                    );
+                }
+            });
     }
 }

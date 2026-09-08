@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('prompt_marathi');
             $table->json('choices');
             $table->json('expected_answer');
+            $table->json('presentation')->nullable();
             $table->unsignedSmallInteger('difficulty')->default(1);
             $table->unsignedInteger('max_score')->default(100);
             $table->unsignedInteger('response_time_limit_ms')->nullable();

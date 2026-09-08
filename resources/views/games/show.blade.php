@@ -46,8 +46,14 @@
 
             <div class="game-prompt-wrap">
                 <span class="badge rounded-pill text-bg-light text-primary" data-game-level></span>
+                <p class="game-context" data-game-context hidden></p>
+                <div class="game-visual" data-game-visual hidden aria-hidden="true"></div>
+                <button class="btn btn-primary game-listen-button" type="button" data-game-listen hidden>
+                    <i class="bi bi-volume-up" aria-hidden="true"></i>
+                    ऐका
+                </button>
                 <h2 class="game-prompt" data-game-prompt>खेळ तयार होत आहे...</h2>
-                <p class="text-secondary mb-0">योग्य कार्डला स्पर्श करा.</p>
+                <p class="text-secondary mb-0">योग्य पर्यायाला स्पर्श करा.</p>
             </div>
 
             <div class="game-feedback" data-game-feedback hidden></div>

@@ -471,12 +471,422 @@ class DatabaseSeeder extends Seeder
                 ],
             ],
         ];
+        $games = [
+            ...$games,
+            ...$this->mathematicsGameDefinitions(),
+            ...$this->marathiGameDefinitions(),
+        ];
 
         foreach ($games as $definition) {
+            $definition['attributes']['created_by'] = $creator->id;
             $game = Game::query()->create($definition['attributes']);
             $game->levels()->createMany($levelDefinitions);
-            $game->skills()->attach($definition['skill']->id, ['weight' => 1]);
+
+            if (isset($definition['skill'])) {
+                $game->skills()->attach($definition['skill']->id, ['weight' => 1]);
+
+                continue;
+            }
+
+            $skills = Skill::query()
+                ->whereIn('code', array_keys($definition['skills']))
+                ->get()
+                ->keyBy('code');
+            $game->skills()->attach(
+                collect($definition['skills'])
+                    ->mapWithKeys(fn (int|float $weight, string $code): array => [
+                        $skills->get($code)->id => ['weight' => $weight],
+                    ])
+                    ->all(),
+            );
         }
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function mathematicsGameDefinitions(): array
+    {
+        return [
+            $this->gameDefinition(
+                'NUMBER_TRAIN',
+                'number_sequence',
+                'Number Train',
+                'अंकगाडी',
+                'Complete the number sequence.',
+                'अंकांचा योग्य क्रम पूर्ण करा.',
+                '🚂',
+                ['NUMBER_ORDERING' => 1],
+            ),
+            $this->gameDefinition(
+                'GREATER_OR_SMALLER',
+                'number_comparison',
+                'Greater or Smaller',
+                'मोठा की लहान',
+                'Compare two numbers.',
+                'दोन अंकांची तुलना करा.',
+                '⚖️',
+                ['NUMBER_COMPARISON' => 1],
+            ),
+            $this->gameDefinition(
+                'PLACE_VALUE_HOUSE',
+                'place_value',
+                'Place Value House',
+                'स्थानिक किंमत घर',
+                'Find the place value of a digit.',
+                'अंकाची स्थानिक किंमत ओळखा.',
+                '🏠',
+                ['PLACE_VALUE' => 1],
+            ),
+            $this->gameDefinition(
+                'NUMBER_LINE_JUMP',
+                'number_line',
+                'Number Line Jump',
+                'संख्यारेषेवर उडी',
+                'Jump forward on a number line.',
+                'संख्यारेषेवर योग्य उडी मारा.',
+                '🦘',
+                ['NUMBER_ORDERING' => 1, 'ADDITION' => 1],
+            ),
+            $this->gameDefinition(
+                'ADDITION_ADVENTURE',
+                'addition',
+                'Addition Adventure',
+                'बेरीज सफर',
+                'Solve addition challenges.',
+                'बेरीज सोडवून सफर पूर्ण करा.',
+                '➕',
+                ['ADDITION' => 1],
+            ),
+            $this->gameDefinition(
+                'SUBTRACTION_ADVENTURE',
+                'subtraction',
+                'Subtraction Adventure',
+                'वजाबाकी सफर',
+                'Solve subtraction challenges.',
+                'वजाबाकी सोडवून सफर पूर्ण करा.',
+                '➖',
+                ['SUBTRACTION' => 1],
+            ),
+            $this->gameDefinition(
+                'FRACTION_PIZZA',
+                'fraction',
+                'Fraction Pizza',
+                'अपूर्णांक पिझ्झा',
+                'Match equal parts with a fraction.',
+                'समान भागांचा योग्य अपूर्णांक निवडा.',
+                '🍕',
+                ['FRACTIONS' => 1],
+            ),
+            $this->gameDefinition(
+                'SHOPPING_GAME',
+                'shopping',
+                'Shopping Game',
+                'खरेदीचा खेळ',
+                'Calculate a shopping total.',
+                'वस्तूंची एकूण किंमत मोजा.',
+                '🛒',
+                ['MONEY' => 1, 'MULTIPLICATION' => 1],
+            ),
+            $this->gameDefinition(
+                'MULTIPLICATION_SPACE_MISSION',
+                'multiplication',
+                'Multiplication Space Mission',
+                'गुणाकार अंतराळ मोहीम',
+                'Solve multiplication facts to travel through space.',
+                'गुणाकार सोडवून अंतराळ मोहीम पूर्ण करा.',
+                '🚀',
+                ['MULTIPLICATION' => 1],
+            ),
+            $this->gameDefinition(
+                'DIVISION_SHARING_GAME',
+                'division',
+                'Division Sharing Game',
+                'भागाकार वाटप खेळ',
+                'Share objects equally.',
+                'वस्तूंचे समान वाटप करा.',
+                '🤝',
+                ['DIVISION' => 1],
+            ),
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function marathiGameDefinitions(): array
+    {
+        return [
+            $this->choiceBankGameDefinition(
+                'MATRA_BALLOONS',
+                'Vowel Mark Balloons',
+                'मात्रा फुगे',
+                'Choose the vowel mark that completes the word.',
+                'शब्द पूर्ण करणारी योग्य मात्रा निवडा.',
+                '🎈',
+                ['VOWEL_MARKS' => 1],
+                [
+                    $this->gameQuestion('Complete the word m_r.', 'म_र हा शब्द पूर्ण करा.', 'ो', ['ा', 'ि', 'ु', 'ो']),
+                    $this->gameQuestion('Complete the word ph_l.', 'फ_ल हा शब्द पूर्ण करा.', 'ू', ['ा', 'ी', 'ु', 'ू']),
+                    $this->gameQuestion('Complete the word d_dh.', 'द_ध हा शब्द पूर्ण करा.', 'ू', ['ा', 'ि', 'ु', 'ू']),
+                    $this->gameQuestion('Complete the word n_v.', 'न_व हा शब्द पूर्ण करा.', 'ा', ['ा', 'ि', 'ी', 'ु']),
+                    $this->gameQuestion('Complete the word m_sa.', 'म_सा हा शब्द पूर्ण करा.', 'ा', ['ा', 'ि', 'ु', 'े']),
+                    $this->gameQuestion('Complete the word d_va.', 'द_वा हा शब्द पूर्ण करा.', 'ि', ['ा', 'ि', 'ी', 'ु']),
+                    $this->gameQuestion('Complete the word s_rya.', 'स_र्य हा शब्द पूर्ण करा.', 'ू', ['ा', 'ि', 'ु', 'ू']),
+                    $this->gameQuestion('Complete the word k_li.', 'क_ळी हा शब्द पूर्ण करा.', 'े', ['ा', 'ि', 'ु', 'े']),
+                    $this->gameQuestion('Complete the word m_laga.', 'म_लगा हा शब्द पूर्ण करा.', 'ु', ['ा', 'ि', 'ु', 'ू']),
+                    $this->gameQuestion('Complete the word sh_la.', 'श_ळा हा शब्द पूर्ण करा.', 'ा', ['ा', 'ि', 'ु', 'े']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'BUILD_THE_WORD',
+                'Build the Word',
+                'शब्द तयार करा',
+                'Join letters to make a meaningful word.',
+                'अक्षरे जोडून अर्थपूर्ण शब्द तयार करा.',
+                '🧩',
+                ['WORD_FORMATION' => 1, 'LETTER_JOINING' => 1],
+                [
+                    $this->gameQuestion('Join ka + ma + la.', 'क + म + ळ यांपासून शब्द तयार करा.', 'कमळ', ['कमळ', 'कळम', 'मळक', 'मकल']),
+                    $this->gameQuestion('Join gha + ra.', 'घ + र यांपासून शब्द तयार करा.', 'घर', ['घर', 'रघ', 'घरं', 'गर']),
+                    $this->gameQuestion('Join aa + i.', 'आ + ई यांपासून शब्द तयार करा.', 'आई', ['आई', 'इआ', 'आइ', 'ईआ']),
+                    $this->gameQuestion('Join ba + sa.', 'ब + स यांपासून शब्द तयार करा.', 'बस', ['बस', 'सब', 'बसा', 'सबा']),
+                    $this->gameQuestion('Join pha + la.', 'फ + ळ यांपासून शब्द तयार करा.', 'फळ', ['फळ', 'ळफ', 'फल', 'फाळ']),
+                    $this->gameQuestion('Join ma + ra.', 'म + र यांपासून शब्द तयार करा.', 'मर', ['मर', 'रम', 'मार', 'मोर']),
+                    $this->gameQuestion('Join sha + la.', 'शा + ळा यांपासून शब्द तयार करा.', 'शाळा', ['शाळा', 'शाला', 'ळाशा', 'शाळ']),
+                    $this->gameQuestion('Join pa + kshi.', 'प + क्षी यांपासून शब्द तयार करा.', 'पक्षी', ['पक्षी', 'पक्ष', 'क्षीप', 'पकशी']),
+                    $this->gameQuestion('Join cha + ndra.', 'चं + द्र यांपासून शब्द तयार करा.', 'चंद्र', ['चंद्र', 'चंदर', 'द्रचं', 'चांद्र']),
+                    $this->gameQuestion('Join pu + sta + ka.', 'पु + स्त + क यांपासून शब्द तयार करा.', 'पुस्तक', ['पुस्तक', 'पुसतक', 'स्तकपु', 'पुस्तका']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'PICTURE_WORD_MATCH',
+                'Picture Word Match',
+                'चित्र-शब्द जुळवा',
+                'Choose the word that matches the picture.',
+                'चित्राला जुळणारा शब्द निवडा.',
+                '🖼️',
+                ['WORD_RECOGNITION' => 1, 'VOCABULARY' => 1],
+                [
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'आंबा', ['आंबा', 'केळी', 'फूल', 'घर'], ['visual' => '🥭']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'केळी', ['आंबा', 'केळी', 'पान', 'बस'], ['visual' => '🍌']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'सफरचंद', ['फूल', 'सफरचंद', 'चेंडू', 'वही'], ['visual' => '🍎']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'घर', ['शाळा', 'घर', 'झाड', 'फळ'], ['visual' => '🏠']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'झाड', ['झाड', 'पुस्तक', 'मासा', 'चंद्र'], ['visual' => '🌳']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'मासा', ['पक्षी', 'मासा', 'मांजर', 'फूल'], ['visual' => '🐟']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'पक्षी', ['मासा', 'पक्षी', 'चेंडू', 'सूर्य'], ['visual' => '🐦']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'पुस्तक', ['वही', 'पुस्तक', 'पेन्सिल', 'पाटी'], ['visual' => '📘']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'चेंडू', ['चेंडू', 'छत्री', 'दप्तर', 'बूट'], ['visual' => '⚽']),
+                    $this->gameQuestion('Choose the matching word.', 'चित्राला जुळणारा शब्द निवडा.', 'सूर्य', ['चंद्र', 'तारा', 'सूर्य', 'ढग'], ['visual' => '☀️']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'WORD_TRAIN',
+                'Word Train',
+                'शब्द ट्रेन',
+                'Add a related word to the train.',
+                'शब्दगाडीत योग्य संबंधित शब्द जोडा.',
+                '🚂',
+                ['WORD_READING' => 1, 'VOCABULARY' => 1],
+                [
+                    $this->gameQuestion('Add another fruit.', 'आंबा → केळी → सफरचंद → ?', 'द्राक्ष', ['द्राक्ष', 'गाजर', 'बस', 'घर']),
+                    $this->gameQuestion('Add another colour.', 'लाल → निळा → हिरवा → ?', 'पिवळा', ['पिवळा', 'आंबा', 'पक्षी', 'वही']),
+                    $this->gameQuestion('Add another animal.', 'गाय → मांजर → कुत्रा → ?', 'घोडा', ['घोडा', 'कमळ', 'पाऊस', 'घर']),
+                    $this->gameQuestion('Add another body part.', 'हात → पाय → डोळा → ?', 'नाक', ['नाक', 'फळ', 'पुस्तक', 'बस']),
+                    $this->gameQuestion('Add another school item.', 'वही → पुस्तक → पेन्सिल → ?', 'पाटी', ['पाटी', 'मासा', 'सूर्य', 'फूल']),
+                    $this->gameQuestion('Add another vehicle.', 'बस → रेल्वे → सायकल → ?', 'कार', ['कार', 'झाड', 'चंद्र', 'द्राक्ष']),
+                    $this->gameQuestion('Add another flower.', 'गुलाब → कमळ → जास्वंद → ?', 'मोगरा', ['मोगरा', 'गाजर', 'पाऊस', 'पक्षी']),
+                    $this->gameQuestion('Add another vegetable.', 'बटाटा → कांदा → टोमॅटो → ?', 'गाजर', ['गाजर', 'केळी', 'वही', 'चेंडू']),
+                    $this->gameQuestion('Add another day.', 'सोमवार → मंगळवार → बुधवार → ?', 'गुरुवार', ['गुरुवार', 'जानेवारी', 'सकाळ', 'उन्हाळा']),
+                    $this->gameQuestion('Add another season.', 'उन्हाळा → पावसाळा → ?', 'हिवाळा', ['हिवाळा', 'सोमवार', 'सकाळ', 'नदी']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'SENTENCE_MATCH',
+                'Sentence Match',
+                'वाक्य जुळवा',
+                'Choose the sentence that matches the picture.',
+                'चित्राला जुळणारे वाक्य निवडा.',
+                '💬',
+                ['SENTENCE_READING' => 1, 'COMPREHENSION' => 1],
+                [
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'मुलगा पुस्तक वाचतो.', ['मुलगा पुस्तक वाचतो.', 'मुलगा चेंडू खेळतो.', 'मुलगा झोपतो.', 'मुलगा धावतो.'], ['visual' => '👦📖']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'मुलगी सायकल चालवते.', ['मुलगी सायकल चालवते.', 'मुलगी जेवते.', 'मुलगी गाते.', 'मुलगी लिहिते.'], ['visual' => '👧🚲']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'मांजर दूध पिते.', ['मांजर दूध पिते.', 'मांजर उडते.', 'मांजर पुस्तक वाचते.', 'मांजर पोहते.'], ['visual' => '🐈🥛']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'पाऊस पडत आहे.', ['पाऊस पडत आहे.', 'ऊन पडले आहे.', 'बर्फ पडतो.', 'वारा थांबला आहे.'], ['visual' => '🌧️']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'पक्षी झाडावर बसला आहे.', ['पक्षी झाडावर बसला आहे.', 'मासा झाडावर आहे.', 'पक्षी पाण्यात आहे.', 'झाड उडत आहे.'], ['visual' => '🐦🌳']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'मुले शाळेत जातात.', ['मुले शाळेत जातात.', 'मुले बाजारात झोपतात.', 'मुले नदीत लिहितात.', 'मुले आकाशात उडतात.'], ['visual' => '🧒🧒🏫']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'आई स्वयंपाक करते.', ['आई स्वयंपाक करते.', 'आई सायकल दुरुस्त करते.', 'आई पोहते.', 'आई झोपली आहे.'], ['visual' => '👩🍲']),
+                    $this->gameQuestion('Match the sentence.', 'चित्राला जुळणारे वाक्य निवडा.', 'शेतकरी शेतात काम करतो.', ['शेतकरी शेतात काम करतो.', 'शेतकरी विमान चालवतो.', 'शेतकरी वर्गात शिकवतो.', 'शेतकरी दुकानात झोपतो.'], ['visual' => '🧑‍🌾🌾']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'LISTEN_AND_SELECT',
+                'Listen and Select',
+                'ऐका आणि निवडा',
+                'Listen and choose the word you hear.',
+                'शब्द ऐका आणि योग्य शब्द निवडा.',
+                '🔊',
+                ['DICTATION' => 1, 'WORD_RECOGNITION' => 1],
+                [
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'कमळ', ['कमळ', 'कपाट', 'कळम', 'कपाळ'], ['audio_text' => 'कमळ']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'आकाश', ['आकाश', 'आकार', 'आगार', 'आवाज'], ['audio_text' => 'आकाश']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'पुस्तक', ['पुस्तक', 'पुस्तिका', 'पुसतक', 'मस्तक'], ['audio_text' => 'पुस्तक']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'शाळा', ['शाळा', 'शाला', 'माळा', 'ताळा'], ['audio_text' => 'शाळा']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'फुलपाखरू', ['फुलपाखरू', 'फुलदाणी', 'फुलझाड', 'फळपाखरू'], ['audio_text' => 'फुलपाखरू']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'चिमणी', ['चिमणी', 'चांदणी', 'चिंचणी', 'चमचा'], ['audio_text' => 'चिमणी']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'पाऊस', ['पाऊस', 'पावस', 'पाउस', 'पायस'], ['audio_text' => 'पाऊस']),
+                    $this->gameQuestion('Listen and select the word.', 'ऐका आणि योग्य शब्द निवडा.', 'सायकल', ['सायकल', 'सायंकाळ', 'साखळ', 'सागर'], ['audio_text' => 'सायकल']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'FIND_CORRECT_WORD',
+                'Find the Correct Word',
+                'योग्य शब्द शोधा',
+                'Find the correctly written word.',
+                'योग्य लिहिलेला शब्द शोधा.',
+                '🔎',
+                ['WORD_RECOGNITION' => 1, 'VOWEL_MARKS' => 1],
+                [
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'पाऊस', ['पाऊस', 'पाउस', 'पावूस', 'पाऊश']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'शाळा', ['शाळा', 'शाला', 'शाळ', 'शाळॉ']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'पुस्तक', ['पुस्तक', 'पूसतक', 'पुस्ताक', 'पुस्तक्']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'केळी', ['केळी', 'केलि', 'केळीं', 'कळी']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'सूर्य', ['सूर्य', 'सुर्य', 'सूऱ्य', 'सूर्ये']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'मुलगी', ['मुलगी', 'मूलगी', 'मुलगि', 'मूलगि']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'चिमणी', ['चिमणी', 'चिमनी', 'चीमणी', 'चिमणि']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'फुलपाखरू', ['फुलपाखरू', 'फूलपाखरु', 'फुलपाखरु', 'फुलपाखरुं']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'स्वच्छ', ['स्वच्छ', 'स्वछ', 'स्वच्छा', 'स्वचछ']),
+                    $this->gameQuestion('Find the correct spelling.', 'योग्य शब्द शोधा.', 'मैदान', ['मैदान', 'मेदान', 'मैदाण', 'मैदानं']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'WORD_ORDER',
+                'Word Order',
+                'शब्द क्रम लावा',
+                'Put the words in a meaningful order.',
+                'शब्दांचा अर्थपूर्ण क्रम निवडा.',
+                '🔢',
+                ['SENTENCE_FORMATION' => 1],
+                [
+                    $this->gameQuestion('Order: school / goes / Raju / to', 'शब्द लावा: शाळेत / राजू / जातो', 'राजू शाळेत जातो.', ['राजू शाळेत जातो.', 'शाळेत जातो राजू.', 'जातो राजू शाळेत.', 'राजू जातो शाळेत.']),
+                    $this->gameQuestion('Order: eats / mango / Sita', 'शब्द लावा: आंबा / सीता / खाते', 'सीता आंबा खाते.', ['सीता आंबा खाते.', 'आंबा खाते सीता.', 'खाते सीता आंबा.', 'सीता खाते आंबा.']),
+                    $this->gameQuestion('Order: rises / sun / east', 'शब्द लावा: पूर्वेला / सूर्य / उगवतो', 'सूर्य पूर्वेला उगवतो.', ['सूर्य पूर्वेला उगवतो.', 'पूर्वेला उगवतो सूर्य.', 'उगवतो सूर्य पूर्वेला.', 'सूर्य उगवतो पूर्वेला.']),
+                    $this->gameQuestion('Order: bird / flies / sky', 'शब्द लावा: आकाशात / पक्षी / उडतो', 'पक्षी आकाशात उडतो.', ['पक्षी आकाशात उडतो.', 'आकाशात उडतो पक्षी.', 'उडतो पक्षी आकाशात.', 'पक्षी उडतो आकाशात.']),
+                    $this->gameQuestion('Order: mother / cooks / food', 'शब्द लावा: स्वयंपाक / आई / करते', 'आई स्वयंपाक करते.', ['आई स्वयंपाक करते.', 'स्वयंपाक करते आई.', 'करते आई स्वयंपाक.', 'आई करते स्वयंपाक.']),
+                    $this->gameQuestion('Order: children / ground / play', 'शब्द लावा: मैदानात / मुले / खेळतात', 'मुले मैदानात खेळतात.', ['मुले मैदानात खेळतात.', 'मैदानात खेळतात मुले.', 'खेळतात मुले मैदानात.', 'मुले खेळतात मैदानात.']),
+                    $this->gameQuestion('Order: water / river / flows', 'शब्द लावा: नदीतून / पाणी / वाहते', 'नदीतून पाणी वाहते.', ['नदीतून पाणी वाहते.', 'पाणी वाहते नदीतून.', 'वाहते नदीतून पाणी.', 'नदीतून वाहते पाणी.']),
+                    $this->gameQuestion('Order: flower / garden / blooms', 'शब्द लावा: बागेत / फूल / उमलते', 'बागेत फूल उमलते.', ['बागेत फूल उमलते.', 'फूल उमलते बागेत.', 'उमलते बागेत फूल.', 'बागेत उमलते फूल.']),
+                ],
+            ),
+            $this->choiceBankGameDefinition(
+                'READING_CHALLENGE',
+                'Reading Challenge',
+                'वाचन आव्हान',
+                'Read a short passage and answer.',
+                'छोटा उतारा वाचा आणि उत्तर द्या.',
+                '📖',
+                ['PARAGRAPH_READING' => 1, 'COMPREHENSION' => 1],
+                [
+                    $this->gameQuestion('Where did Ravi go?', 'रवी कुठे गेला?', 'बागेत', ['बागेत', 'शाळेत', 'बाजारात', 'नदीवर'], ['context_marathi' => 'रवी सकाळी बागेत गेला. त्याने लाल फुले पाहिली.']),
+                    $this->gameQuestion('What colour were the flowers?', 'फुले कोणत्या रंगाची होती?', 'लाल', ['लाल', 'निळी', 'पिवळी', 'पांढरी'], ['context_marathi' => 'रवी सकाळी बागेत गेला. त्याने लाल फुले पाहिली.']),
+                    $this->gameQuestion('What does Mina like?', 'मीनाला काय आवडते?', 'पुस्तके वाचणे', ['पुस्तके वाचणे', 'पोहणे', 'स्वयंपाक', 'झोपणे'], ['context_marathi' => 'मीना रोज शाळेत जाते. तिला गोष्टींची पुस्तके वाचायला आवडतात.']),
+                    $this->gameQuestion('When does Mina go to school?', 'मीना शाळेत कधी जाते?', 'रोज', ['रोज', 'रविवारी', 'रात्री', 'महिन्यातून एकदा'], ['context_marathi' => 'मीना रोज शाळेत जाते. तिला गोष्टींची पुस्तके वाचायला आवडतात.']),
+                    $this->gameQuestion('Who worked in the field?', 'शेतात कोण काम करत होता?', 'शेतकरी', ['शेतकरी', 'डॉक्टर', 'शिक्षक', 'चालक'], ['context_marathi' => 'शेतकरी शेतात काम करत होता. काळे ढग आले आणि पाऊस सुरू झाला.']),
+                    $this->gameQuestion('What started after clouds came?', 'ढग आल्यानंतर काय सुरू झाले?', 'पाऊस', ['पाऊस', 'ऊन', 'बर्फ', 'वाद्य'], ['context_marathi' => 'शेतकरी शेतात काम करत होता. काळे ढग आले आणि पाऊस सुरू झाला.']),
+                    $this->gameQuestion('What did the children plant?', 'मुलांनी काय लावले?', 'रोप', ['रोप', 'दगड', 'खेळणे', 'पुस्तक'], ['context_marathi' => 'मुलांनी शाळेच्या अंगणात एक रोप लावले. त्यांनी रोज त्याला पाणी दिले.']),
+                    $this->gameQuestion('What did children give the plant?', 'मुलांनी रोपाला काय दिले?', 'पाणी', ['पाणी', 'दूध', 'रंग', 'वाळू'], ['context_marathi' => 'मुलांनी शाळेच्या अंगणात एक रोप लावले. त्यांनी रोज त्याला पाणी दिले.']),
+                ],
+            ),
+        ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $skills
+     * @return array<string, mixed>
+     */
+    private function gameDefinition(
+        string $code,
+        string $engineKey,
+        string $title,
+        string $titleMarathi,
+        string $description,
+        string $descriptionMarathi,
+        string $icon,
+        array $skills,
+    ): array {
+        return [
+            'skills' => $skills,
+            'attributes' => [
+                'created_by' => null,
+                'code' => $code,
+                'engine_key' => $engineKey,
+                'title' => $title,
+                'title_marathi' => $titleMarathi,
+                'description' => $description,
+                'description_marathi' => $descriptionMarathi,
+                'configuration' => [
+                    'icon' => $icon,
+                    'visual_theme' => $engineKey,
+                    'sound_hook' => 'positive_tone',
+                ],
+                'status' => 'published',
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $skills
+     * @param  list<array<string, mixed>>  $questions
+     * @return array<string, mixed>
+     */
+    private function choiceBankGameDefinition(
+        string $code,
+        string $title,
+        string $titleMarathi,
+        string $description,
+        string $descriptionMarathi,
+        string $icon,
+        array $skills,
+        array $questions,
+    ): array {
+        $definition = $this->gameDefinition(
+            $code,
+            'choice_bank',
+            $title,
+            $titleMarathi,
+            $description,
+            $descriptionMarathi,
+            $icon,
+            $skills,
+        );
+        $definition['attributes']['configuration']['questions'] = $questions;
+
+        return $definition;
+    }
+
+    /**
+     * @param  list<string>  $choices
+     * @param  array<string, string>  $presentation
+     * @return array<string, mixed>
+     */
+    private function gameQuestion(
+        string $prompt,
+        string $promptMarathi,
+        string $answer,
+        array $choices,
+        array $presentation = [],
+    ): array {
+        return [
+            'prompt' => $prompt,
+            'prompt_marathi' => $promptMarathi,
+            'answer' => $answer,
+            'choices' => collect($choices)->map(fn (string $choice): array => [
+                'value' => $choice,
+                'label' => $choice,
+            ])->all(),
+            ...$presentation,
+        ];
     }
 
     private function createDemoPracticeContent(User $creator): void

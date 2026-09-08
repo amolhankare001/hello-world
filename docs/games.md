@@ -8,7 +8,7 @@ The learning game module runs through ordinary authenticated Laravel web request
 - `game_levels` stores question count, choices, lives, timers, score targets, and adaptive difficulty thresholds.
 - `game_skills` connects every game to one or more curriculum skills.
 - `game_sessions` stores the student, academic year, selected level, expiry, and server-owned state.
-- `game_questions` freezes the generated round, including public choices and a server-only expected answer.
+- `game_questions` freezes the generated round, including public choices, optional presentation/audio metadata, and a server-only expected answer.
 - `game_answers` stores one validated answer, server-measured response time, correctness, and score per question.
 - `game_results` stores the validated final score, accuracy, duration, XP, and completion summary.
 
@@ -33,6 +33,17 @@ The client never submits score, correctness, XP, difficulty, remaining lives, or
 - `GameFeedbackManager` supplies child-friendly Marathi feedback.
 - `GamificationService` is the shared XP manager and prevents duplicate source rewards.
 
+## Available engines
+
+- `catch` selects targets and distractors from a configured item bank.
+- `choice_bank` serves authored Marathi reading, vocabulary, listening, matching, and ordering questions.
+- `number_sequence`, `number_comparison`, `place_value`, and `number_line` generate number-concept questions.
+- `addition`, `subtraction`, `multiplication`, and `division` generate level-scaled arithmetic.
+- `fraction` generates equal-part fraction questions.
+- `shopping` generates quantity and money questions.
+
+All engines return the same frozen question structure, so scoring, timers, lives, evidence, progress, XP, and analytics continue through the shared session service.
+
 ## Adding a catch-style game
 
 Add a `games` record with `engine_key` set to `catch`, attach at least one skill, provide at least one level, and configure:
@@ -51,6 +62,10 @@ Add a `games` record with `engine_key` set to `catch`, attach at least one skill
 ```
 
 Each level may configure `question_count`, `choice_count`, `item_count`, `lives`, `response_time_seconds`, `difficulty_up_accuracy`, `remedial_accuracy`, `minimum_difficulty`, and `maximum_difficulty`. New content using the catch engine requires no schema change.
+
+## Adding an authored choice-bank game
+
+Set `engine_key` to `choice_bank` and add a `questions` list to the game configuration. Every question defines Marathi and English prompts, choice values, and the expected value. Optional `visual`, `context_marathi`, and `audio_text` fields control reusable presentation components. Expected values remain on the server and are copied only to the hidden expected-answer column when a session starts.
 
 ## Security and replay protection
 

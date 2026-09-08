@@ -250,6 +250,7 @@ class GameSessionService
                 'prompt' => $nextQuestion->prompt,
                 'prompt_marathi' => $nextQuestion->prompt_marathi,
                 'choices' => $nextQuestion->choices,
+                'presentation' => $nextQuestion->presentation ?? [],
                 'response_time_limit_ms' => $nextQuestion->response_time_limit_ms,
             ],
             'completed' => $gameSession->status === 'completed',

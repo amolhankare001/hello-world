@@ -32,6 +32,7 @@ class GameQuestionFactory extends Factory
                 ['value' => 'C', 'label' => 'C'],
             ],
             'expected_answer' => ['value' => 'A'],
+            'presentation' => [],
             'difficulty' => 1,
             'max_score' => 100,
             'response_time_limit_ms' => 10000,

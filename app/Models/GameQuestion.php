@@ -22,6 +22,7 @@ class GameQuestion extends Model
         'prompt_marathi',
         'choices',
         'expected_answer',
+        'presentation',
         'difficulty',
         'max_score',
         'response_time_limit_ms',
@@ -36,6 +37,7 @@ class GameQuestion extends Model
         return [
             'choices' => 'array',
             'expected_answer' => 'array',
+            'presentation' => 'array',
         ];
     }
 

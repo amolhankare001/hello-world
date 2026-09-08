@@ -12,10 +12,12 @@ if (root) {
 
     const elements = {
         choices: root.querySelector('[data-game-choices]'),
+        context: root.querySelector('[data-game-context]'),
         feedback: root.querySelector('[data-game-feedback]'),
         level: root.querySelector('[data-game-level]'),
         lives: root.querySelector('[data-game-lives]'),
         loading: root.querySelector('[data-game-loading]'),
+        listen: root.querySelector('[data-game-listen]'),
         progress: root.querySelector('[data-game-progress]'),
         progressBar: root.querySelector('[data-game-progress-bar]'),
         progressTrack: root.querySelector('.game-progress-track'),
@@ -23,6 +25,7 @@ if (root) {
         score: root.querySelector('[data-game-score]'),
         sound: root.querySelector('[data-game-sound]'),
         timer: root.querySelector('[data-game-timer]'),
+        visual: root.querySelector('[data-game-visual]'),
     };
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -47,6 +50,18 @@ if (root) {
         oscillator.start();
         oscillator.stop(context.currentTime + 0.18);
         oscillator.addEventListener('ended', () => context.close());
+    }
+
+    function speak(text) {
+        if (!soundEnabled || !text || !window.speechSynthesis) {
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'mr-IN';
+        utterance.rate = 0.82;
+        window.speechSynthesis.speak(utterance);
     }
 
     function remainingSeconds() {
@@ -213,7 +228,14 @@ if (root) {
         elements.level.textContent = `पातळी ${session.level} · ${session.level_name}`;
 
         if (question) {
+            const presentation = question.presentation || {};
             elements.prompt.textContent = question.prompt_marathi;
+            elements.context.textContent = presentation.context_marathi || '';
+            elements.context.hidden = !presentation.context_marathi;
+            elements.visual.textContent = presentation.visual || '';
+            elements.visual.hidden = !presentation.visual;
+            elements.listen.hidden = !presentation.audio_text;
+            elements.listen.dataset.audioText = presentation.audio_text || '';
             renderChoices(question);
         }
 
@@ -226,6 +248,7 @@ if (root) {
         elements.sound.querySelector('i').className = `bi bi-volume-${soundEnabled ? 'up' : 'mute'}`;
         elements.sound.querySelector('span').textContent = soundEnabled ? 'आवाज सुरू' : 'आवाज बंद';
     });
+    elements.listen.addEventListener('click', () => speak(elements.listen.dataset.audioText));
 
     render();
     timerId = window.setInterval(updateTimer, 1000);
