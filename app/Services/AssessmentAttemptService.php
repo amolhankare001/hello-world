@@ -16,7 +16,10 @@ use RuntimeException;
 
 class AssessmentAttemptService
 {
-    public function __construct(private PracticeAnswerEvaluator $answerEvaluator) {}
+    public function __construct(
+        private PracticeAnswerEvaluator $answerEvaluator,
+        private GamificationService $gamificationService,
+    ) {}
 
     /**
      * @param  array<int|string, mixed>  $submittedAnswers
@@ -33,7 +36,7 @@ class AssessmentAttemptService
                 return $lockedAttempt;
             }
 
-            $lockedAttempt->load('test');
+            $lockedAttempt->load(['academicYear', 'student', 'test']);
             $questionIds = data_get($lockedAttempt->diagnosis, 'question_ids', []);
             $questionsById = Question::query()
                 ->whereIn('id', $questionIds)
@@ -59,6 +62,7 @@ class AssessmentAttemptService
                 ->get()
                 ->keyBy('question_id');
             $responses = [];
+            $firstSkillEvent = null;
             $rawScore = 0.0;
             $rawMaxScore = 0.0;
             $correctCount = 0;
@@ -92,7 +96,14 @@ class AssessmentAttemptService
                     'error_type_marathi' => $evaluation['is_correct'] ? null : $question->errorType?->name_marathi,
                 ];
                 $answer = $this->storeAnswer($lockedAttempt, $question, $response, $durationPerQuestion, $submittedAt);
-                $this->recordSkillEvent($lockedAttempt, $answer, $response, $durationPerQuestion, $submittedAt);
+                $skillEvent = $this->recordSkillEvent(
+                    $lockedAttempt,
+                    $answer,
+                    $response,
+                    $durationPerQuestion,
+                    $submittedAt,
+                );
+                $firstSkillEvent ??= $skillEvent;
                 $responses[] = $response;
             }
 
@@ -100,6 +111,11 @@ class AssessmentAttemptService
             $percentage = $rawMaxScore > 0 ? round(($rawScore / $rawMaxScore) * 100, 2) : 0;
             $comparison = $this->comparison($lockedAttempt, $percentage, $accuracy);
             $skillDiagnosis = $this->skillDiagnosis($responses, $lockedAttempt, $comparison);
+            $previousBest = TestAttempt::query()
+                ->where('student_id', $lockedAttempt->student_id)
+                ->where('test_id', $lockedAttempt->test_id)
+                ->where('status', 'completed')
+                ->max('percentage');
 
             $lockedAttempt->update([
                 'status' => 'completed',
@@ -117,6 +133,17 @@ class AssessmentAttemptService
                     'comparison' => $comparison,
                 ],
             ]);
+            $gamification = $this->gamificationService->recordCompletion(
+                $lockedAttempt->student,
+                $lockedAttempt->academicYear,
+                'test_attempt',
+                $lockedAttempt->id,
+                count($skillDiagnosis) === 1 ? $skillDiagnosis[0]['skill_id'] : null,
+                $accuracy,
+                $durationSeconds,
+                $previousBest !== null && $percentage > (float) $previousBest,
+            );
+            $firstSkillEvent?->update(['xp_awarded' => $gamification['xp_awarded']]);
 
             foreach ($skillDiagnosis as $diagnosis) {
                 $this->updateSkillProgress($lockedAttempt, $diagnosis);
@@ -168,8 +195,8 @@ class AssessmentAttemptService
         array $response,
         int $durationSeconds,
         DateTimeInterface $occurredAt,
-    ): void {
-        StudentSkillEvent::query()->create([
+    ): StudentSkillEvent {
+        return StudentSkillEvent::query()->create([
             'event_key' => (string) Str::uuid(),
             'student_id' => $attempt->student_id,
             'skill_id' => $response['skill_id'],

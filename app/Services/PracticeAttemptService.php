@@ -12,7 +12,10 @@ use RuntimeException;
 
 class PracticeAttemptService
 {
-    public function __construct(private PracticeAnswerEvaluator $answerEvaluator) {}
+    public function __construct(
+        private PracticeAnswerEvaluator $answerEvaluator,
+        private GamificationService $gamificationService,
+    ) {}
 
     /**
      * @param  array<int|string, mixed>  $submittedAnswers
@@ -29,7 +32,7 @@ class PracticeAttemptService
                 return $lockedAttempt;
             }
 
-            $lockedAttempt->load('practiceActivity.activity.skillLevel');
+            $lockedAttempt->load(['academicYear', 'student', 'practiceActivity.activity.skillLevel']);
             $questionIds = data_get($lockedAttempt->answers, 'question_ids', []);
             $questionsById = Question::query()
                 ->whereIn('id', $questionIds)
@@ -84,6 +87,14 @@ class PracticeAttemptService
             $score = $rawMaxScore > 0
                 ? round(($rawScore / $rawMaxScore) * (float) $activity->max_score, 2)
                 : 0;
+            $progress = StudentSkillProgress::query()
+                ->where('student_id', $lockedAttempt->student_id)
+                ->where('skill_id', $activity->skill_id)
+                ->where('academic_year_id', $lockedAttempt->academic_year_id)
+                ->first();
+            $isPersonalBest = $progress !== null
+                && $progress->practice_count > 0
+                && $score > (float) $progress->best_score;
 
             $lockedAttempt->update([
                 'status' => 'completed',
@@ -100,11 +111,22 @@ class PracticeAttemptService
                 ],
             ]);
 
+            $gamification = $this->gamificationService->recordCompletion(
+                $lockedAttempt->student,
+                $lockedAttempt->academicYear,
+                'practice_attempt',
+                $lockedAttempt->id,
+                $activity->skill_id,
+                $accuracy,
+                $durationSeconds,
+                $isPersonalBest,
+            );
             $this->recordSkillEvents(
                 $lockedAttempt,
                 $responses,
                 $durationPerQuestion,
                 $completedAt,
+                $gamification['xp_awarded'],
             );
             $this->updateSkillProgress($lockedAttempt, $accuracy, $score, $questionCount, $correctCount);
 
@@ -120,10 +142,11 @@ class PracticeAttemptService
         array $responses,
         int $durationPerQuestion,
         \DateTimeInterface $occurredAt,
+        int $xpAwarded,
     ): void {
         $activity = $attempt->practiceActivity->activity;
 
-        foreach ($responses as $response) {
+        foreach ($responses as $index => $response) {
             StudentSkillEvent::query()->create([
                 'event_key' => (string) Str::uuid(),
                 'student_id' => $attempt->student_id,
@@ -140,7 +163,7 @@ class PracticeAttemptService
                 'duration_seconds' => $durationPerQuestion,
                 'difficulty' => $response['difficulty'],
                 'is_correct' => $response['is_correct'],
-                'xp_awarded' => 0,
+                'xp_awarded' => $index === 0 ? $xpAwarded : 0,
                 'metadata' => [
                     'attempt_key' => $attempt->attempt_key,
                     'question_id' => $response['question_id'],

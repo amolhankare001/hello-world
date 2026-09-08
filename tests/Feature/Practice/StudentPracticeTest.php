@@ -103,6 +103,18 @@ class StudentPracticeTest extends TestCase
             'activity_type' => 'practice',
             'is_correct' => false,
         ]);
+        $this->assertDatabaseHas('student_skill_events', [
+            'student_id' => $student->id,
+            'activity_type' => 'practice',
+            'xp_awarded' => 15,
+        ]);
+        $this->assertDatabaseHas('xp_transactions', [
+            'student_id' => $student->id,
+            'source_type' => 'practice_attempt',
+            'source_id' => $attempt->id,
+            'reason' => 'practice_completed',
+            'points' => 15,
+        ]);
         $this->assertDatabaseHas('student_skill_progress', [
             'student_id' => $student->id,
             'skill_id' => $activity->skill_id,
@@ -130,6 +142,7 @@ class StudentPracticeTest extends TestCase
         $this->actingAs($studentUser)->post(route('practice.attempts.submit', $attempt), $payload);
 
         $this->assertDatabaseCount('student_skill_events', 1);
+        $this->assertDatabaseCount('xp_transactions', 2);
         $this->assertDatabaseHas('student_skill_progress', [
             'student_id' => $student->id,
             'practice_count' => 1,

@@ -183,6 +183,81 @@ class DatabaseSeeder extends Seeder
                 'criteria' => ['activity_count' => 1],
                 'xp_bonus' => 10,
             ]);
+            $additionSkill = Skill::query()->where('code', 'ADDITION')->firstOrFail();
+            $wordRecognitionSkill = Skill::query()->where('code', 'WORD_RECOGNITION')->firstOrFail();
+
+            foreach ([
+                [
+                    'subject_id' => $marathi->id,
+                    'skill_id' => $wordRecognitionSkill->id,
+                    'code' => 'WORD_FRIEND',
+                    'name' => 'Word Friend',
+                    'name_marathi' => 'शब्दमित्र',
+                    'description_marathi' => 'शब्द ओळख सराव तीन वेळा पूर्ण कर.',
+                    'criteria' => ['practice_count' => 3],
+                    'xp_bonus' => 15,
+                    'rarity' => 'common',
+                ],
+                [
+                    'subject_id' => $mathematics->id,
+                    'code' => 'NUMBER_FRIEND',
+                    'name' => 'Number Friend',
+                    'name_marathi' => 'संख्यामित्र',
+                    'description_marathi' => 'गणिताच्या पाच अध्ययन कृती पूर्ण कर.',
+                    'criteria' => ['activity_count' => 5],
+                    'xp_bonus' => 20,
+                    'rarity' => 'common',
+                ],
+                [
+                    'subject_id' => $mathematics->id,
+                    'skill_id' => $additionSkill->id,
+                    'code' => 'ADDITION_STAR',
+                    'name' => 'Addition Star',
+                    'name_marathi' => 'बेरीज स्टार',
+                    'description_marathi' => 'बेरीज सराव तीन वेळा पूर्ण कर.',
+                    'criteria' => ['practice_count' => 3],
+                    'xp_bonus' => 20,
+                    'rarity' => 'uncommon',
+                ],
+                [
+                    'code' => 'CONSISTENCY_3',
+                    'name' => 'Consistency Star',
+                    'name_marathi' => 'सातत्यवीर',
+                    'description_marathi' => 'सलग तीन दिवस अध्ययन कर.',
+                    'criteria' => ['streak_days' => 3],
+                    'xp_bonus' => 20,
+                    'rarity' => 'uncommon',
+                ],
+                [
+                    'code' => 'EFFORT_HERO',
+                    'name' => 'Effort Hero',
+                    'name_marathi' => 'प्रयत्नवीर',
+                    'description_marathi' => 'पाच अध्ययन कृती पूर्ण कर.',
+                    'criteria' => ['activity_count' => 5],
+                    'xp_bonus' => 20,
+                    'rarity' => 'common',
+                ],
+                [
+                    'code' => 'PROGRESS_HERO',
+                    'name' => 'Progress Hero',
+                    'name_marathi' => 'प्रगतीवीर',
+                    'description_marathi' => '१०० XP मिळव.',
+                    'criteria' => ['xp' => 100],
+                    'xp_bonus' => 25,
+                    'rarity' => 'uncommon',
+                ],
+                [
+                    'code' => 'PRACTICE_CHAMPION',
+                    'name' => 'Practice Champion',
+                    'name_marathi' => 'सराव चॅम्पियन',
+                    'description_marathi' => 'दहा सराव कृती पूर्ण कर.',
+                    'criteria' => ['practice_count' => 10],
+                    'xp_bonus' => 30,
+                    'rarity' => 'rare',
+                ],
+            ] as $badge) {
+                Badge::query()->create($badge);
+            }
 
             foreach ([
                 ['LEARNING', 'Learning habits', 'अध्ययन सवयी'],

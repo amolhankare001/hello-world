@@ -37,3 +37,121 @@ a:focus-visible {
     box-shadow: 0 0 0 0.25rem rgb(91 60 196 / 20%);
     outline: 0;
 }
+
+.student-hero {
+    background: linear-gradient(135deg, #5b3cc4, #8669df);
+    color: #fff;
+}
+
+.student-stat {
+    align-items: center;
+    background: rgb(255 255 255 / 14%);
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-height: 5.5rem;
+    justify-content: center;
+}
+
+.student-stat strong {
+    font-size: 1.5rem;
+}
+
+.student-stat span {
+    font-size: 0.8rem;
+}
+
+.student-progress {
+    border-radius: 999px;
+    height: 0.75rem;
+}
+
+.student-icon {
+    align-items: center;
+    border-radius: 1rem;
+    display: inline-flex;
+    font-size: 1.25rem;
+    font-weight: 700;
+    height: 3rem;
+    justify-content: center;
+    min-width: 3rem;
+    padding: 0 0.65rem;
+}
+
+.subject-progress-card .progress-bar {
+    background: linear-gradient(90deg, #5b3cc4, #8b6fe8);
+}
+
+.student-touch-target {
+    min-height: 3rem;
+}
+
+.learning-journey {
+    display: grid;
+    gap: 0;
+}
+
+.journey-step {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    min-height: 4.5rem;
+    position: relative;
+}
+
+.journey-step:not(:last-child)::after {
+    background: #d9d2f4;
+    content: "";
+    height: 1.5rem;
+    left: 1.5rem;
+    position: absolute;
+    top: 3.75rem;
+    width: 0.2rem;
+}
+
+.journey-marker {
+    align-items: center;
+    background: #ece8fb;
+    border-radius: 50%;
+    display: inline-flex;
+    flex: 0 0 3rem;
+    height: 3rem;
+    justify-content: center;
+}
+
+.journey-completed .journey-marker {
+    background: #d1e7dd;
+    color: #146c43;
+}
+
+.journey-unlocked .journey-marker {
+    background: #fff3cd;
+    box-shadow: 0 0 0 0.25rem rgb(255 193 7 / 20%);
+}
+
+.journey-locked {
+    opacity: 0.65;
+}
+
+.student-award {
+    align-items: center;
+    background: #faf9ff;
+    border: 1px solid #e6e0fa;
+    border-radius: 0.85rem;
+    display: flex;
+    gap: 0.75rem;
+    min-height: 3.75rem;
+    padding: 0.75rem;
+}
+
+@media (max-width: 575.98px) {
+    .student-stat {
+        min-height: 4.75rem;
+    }
+
+    .student-stat strong {
+        font-size: 1.2rem;
+    }
+}

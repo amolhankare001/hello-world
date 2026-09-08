@@ -144,6 +144,18 @@ class StudentAssessmentTest extends TestCase
             'activity_type' => 'assessment',
             'is_correct' => false,
         ]);
+        $this->assertDatabaseHas('student_skill_events', [
+            'student_id' => $student->id,
+            'activity_type' => 'assessment',
+            'xp_awarded' => 30,
+        ]);
+        $this->assertDatabaseHas('xp_transactions', [
+            'student_id' => $student->id,
+            'source_type' => 'test_attempt',
+            'source_id' => $attempt->id,
+            'reason' => 'test_completed',
+            'points' => 30,
+        ]);
         $this->assertDatabaseHas('student_skill_progress', [
             'student_id' => $student->id,
             'skill_id' => $skill->id,
@@ -173,6 +185,7 @@ class StudentAssessmentTest extends TestCase
 
         $this->assertDatabaseCount('test_answers', 1);
         $this->assertDatabaseCount('student_skill_events', 1);
+        $this->assertDatabaseCount('xp_transactions', 3);
         $this->assertSame(1, StudentSkillProgress::query()->sole()->total_attempts);
     }
 
