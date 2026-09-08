@@ -8,9 +8,16 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\InterventionController;
+use App\Http\Controllers\LearningRecommendationController;
 use App\Http\Controllers\MentorController;
+use App\Http\Controllers\MentorHolisticProgressController;
+use App\Http\Controllers\MentorStudentProgressController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\PracticeActivityController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SkillController;
@@ -51,6 +58,25 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/student/dashboard', DashboardController::class)
         ->middleware('role:'.RoleCode::Student->value)
         ->name('student.dashboard');
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'readAll'])
+        ->name('notifications.read-all');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])
+        ->name('notifications.read');
+    Route::middleware('role:'.implode(',', [
+        RoleCode::SuperAdmin->value,
+        RoleCode::SchoolAdmin->value,
+        RoleCode::Mentor->value,
+        RoleCode::Student->value,
+    ]))->group(function (): void {
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/{report}', [ReportController::class, 'show'])->name('reports.show');
+    });
+    Route::get('portfolio-items/{portfolio_item}', [PortfolioController::class, 'show'])
+        ->name('portfolio-items.show');
+    Route::get('portfolio-items/{portfolio_item}/download', [PortfolioController::class, 'download'])
+        ->name('portfolio-items.download');
 
     Route::resource('schools', SchoolController::class)
         ->except('destroy')
@@ -106,6 +132,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     });
 
     Route::middleware('role:'.RoleCode::Student->value)->group(function (): void {
+        Route::get('my-portfolio', [PortfolioController::class, 'mine'])->name('portfolio.mine');
         Route::get('games', [StudentGameController::class, 'index'])->name('games.index');
         Route::post('games/{game}/start', [StudentGameController::class, 'start'])->name('games.start');
         Route::get('game-sessions/{game_session}', [StudentGameController::class, 'show'])
@@ -168,6 +195,53 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             ->name('students.mentor-assignment.store');
         Route::resource('mentors', MentorController::class)->except('destroy');
     });
+
+    Route::middleware('role:'.RoleCode::Mentor->value)
+        ->prefix('mentor')
+        ->name('mentor.')
+        ->group(function (): void {
+            Route::post('recommendations/refresh', [MentorStudentProgressController::class, 'refresh'])
+                ->middleware('throttle:10,1')
+                ->name('recommendations.refresh');
+            Route::get('students/{student}/progress', [MentorStudentProgressController::class, 'show'])
+                ->name('students.show');
+            Route::get(
+                'students/{student}/holistic-observations/create',
+                [MentorHolisticProgressController::class, 'create'],
+            )->name('students.holistic-observations.create');
+            Route::post(
+                'students/{student}/holistic-observations',
+                [MentorHolisticProgressController::class, 'store'],
+            )->name('students.holistic-observations.store');
+            Route::get('students/{student}/portfolio', [PortfolioController::class, 'index'])
+                ->name('students.portfolio.index');
+            Route::post('students/{student}/portfolio', [PortfolioController::class, 'store'])
+                ->name('students.portfolio.store');
+            Route::delete('portfolio-items/{portfolio_item}', [PortfolioController::class, 'destroy'])
+                ->name('portfolio-items.destroy');
+            Route::post('students/{student}/interventions', [InterventionController::class, 'store'])
+                ->name('students.interventions.store');
+            Route::get(
+                'recommendations/{learning_recommendation}/edit',
+                [LearningRecommendationController::class, 'edit'],
+            )->name('recommendations.edit');
+            Route::put(
+                'recommendations/{learning_recommendation}',
+                [LearningRecommendationController::class, 'update'],
+            )->name('recommendations.update');
+            Route::post(
+                'recommendations/{learning_recommendation}/accept',
+                [LearningRecommendationController::class, 'accept'],
+            )->name('recommendations.accept');
+            Route::post(
+                'recommendations/{learning_recommendation}/reject',
+                [LearningRecommendationController::class, 'reject'],
+            )->name('recommendations.reject');
+            Route::get('interventions/{intervention}/edit', [InterventionController::class, 'edit'])
+                ->name('interventions.edit');
+            Route::put('interventions/{intervention}', [InterventionController::class, 'update'])
+                ->name('interventions.update');
+        });
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

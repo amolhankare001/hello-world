@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HolisticDomain extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['code', 'name', 'name_marathi', 'description', 'sort_order', 'is_active'];
 
     protected function casts(): array

@@ -20,7 +20,8 @@ The application uses ordinary synchronous Laravel web requests, Blade pages, dat
 5. Configure `.env` on the server and never upload the local environment file.
 6. Run `php artisan migrate --force` from SSH or the hosting terminal.
 7. Run `php artisan optimize`; ensure `storage` and `bootstrap/cache` are writable by the PHP process.
-8. Confirm HTTPS, login, and an authorized dashboard before opening access to users.
+8. Add the optional scheduler cron below if proactive notification delivery is wanted.
+9. Confirm HTTPS, login, reports, a private portfolio download, and an authorized dashboard before opening access to users.
 
 ## Required production configuration
 
@@ -29,8 +30,51 @@ The application uses ordinary synchronous Laravel web requests, Blade pages, dat
 - MySQL credentials with access only to the portal database.
 - `SESSION_DRIVER=database`, `CACHE_STORE=database`, and `QUEUE_CONNECTION=sync`.
 - Secure, HTTP-only session cookies and `SESSION_SECURE_COOKIE=true`.
+- `PORTFOLIO_DISK=local` keeps private student files under `storage/app/private`; never move that directory under `public_html`.
 - Private uploads stored outside the public web root.
 - A daily hosting backup with a documented restore test.
-- A once-per-minute cron entry for `php artisan schedule:run` only when scheduled notifications are enabled.
+- A once-per-minute cron entry for `php artisan schedule:run` only when proactive notification synchronization is enabled.
 
 Production seed data must not contain development accounts. Rotate any initial administrator password immediately.
+
+## cPanel or Plesk cron
+
+The portal creates notifications synchronously whenever a student or mentor opens a dashboard. For proactive hourly synchronization, add one cron job and replace both paths with values from the hosting account:
+
+```sh
+* * * * * /usr/local/bin/php /home/account/learning-portal/artisan schedule:run >> /dev/null 2>&1
+```
+
+The scheduled command is overlap-protected and deduplicates every notification. A queue worker, Redis, Supervisor, and WebSockets are not needed.
+
+## Hosting without a configurable document root
+
+The preferred layout keeps the whole Laravel application outside `public_html` and points the domain at `learning-portal/public`. If the provider cannot change the document root:
+
+1. Keep the application in `/home/account/learning-portal`.
+2. Copy only the contents of `learning-portal/public` into `/home/account/public_html`.
+3. In `public_html/index.php`, change the maintenance, Composer autoload, and bootstrap paths from `../...` to `/home/account/learning-portal/...`.
+4. Keep `.env`, `vendor`, `storage`, source code, and portfolio files outside `public_html`.
+5. Copy each new production build from `learning-portal/public/build` to `public_html/build`.
+
+Do not copy the full application into the web root and do not create a public storage symlink for portfolios.
+
+## Release commands
+
+Run these in the application directory for each release:
+
+```sh
+composer install --no-dev --prefer-dist --classmap-authoritative
+php artisan migrate --force
+php artisan optimize
+php artisan notifications:sync
+```
+
+Compile frontend assets before upload if Node.js is unavailable on the hosting account:
+
+```sh
+npm ci
+npm run build
+```
+
+After changing `.env`, run `php artisan optimize:clear` followed by `php artisan optimize`.

@@ -40,4 +40,4 @@ php artisan serve
 npm run dev
 ```
 
-Queue workers become required when queued reports and notifications are introduced in later phases.
+Reports and database notifications run synchronously. No queue worker is required.

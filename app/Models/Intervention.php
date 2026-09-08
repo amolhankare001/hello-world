@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Database\Factories\InterventionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,11 +11,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Intervention extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<InterventionFactory> */
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'student_id', 'mentor_id', 'academic_year_id', 'skill_id', 'title', 'reason', 'plan',
-        'status', 'starts_on', 'target_completion_on', 'completed_on', 'outcome',
+        'learning_recommendation_id', 'student_id', 'mentor_id', 'academic_year_id',
+        'skill_id', 'title', 'reason', 'plan', 'status', 'starts_on',
+        'target_completion_on', 'completed_on', 'outcome',
     ];
 
     protected function casts(): array
@@ -26,6 +30,21 @@ class Intervention extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function recommendation(): BelongsTo
+    {
+        return $this->belongsTo(LearningRecommendation::class, 'learning_recommendation_id');
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function skill(): BelongsTo
+    {
+        return $this->belongsTo(Skill::class);
     }
 
     public function mentor(): BelongsTo

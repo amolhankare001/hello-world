@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\RoleCode;
 use App\Models\Student;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class StudentPolicy
 {
@@ -20,7 +21,7 @@ class StudentPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Student $student): bool
+    public function view(User $user, Student $student): bool|Response
     {
         if (! $user->canAccessPortal()) {
             return false;
@@ -31,7 +32,7 @@ class StudentPolicy
         }
 
         if ($user->school_id !== $student->school_id) {
-            return false;
+            return Response::denyAsNotFound();
         }
 
         if ($user->hasRole(RoleCode::SchoolAdmin)) {
@@ -39,17 +40,19 @@ class StudentPolicy
         }
 
         if ($user->hasRole(RoleCode::Student)) {
-            return $student->user_id === $user->id;
+            return $student->user_id === $user->id
+                ? true
+                : Response::denyAsNotFound();
         }
 
         if (! $user->hasRole(RoleCode::Mentor)) {
-            return false;
+            return Response::denyAsNotFound();
         }
 
         $mentor = $user->mentor()->first();
 
         if ($mentor === null) {
-            return false;
+            return Response::denyAsNotFound();
         }
 
         $timezone = $user->school()->value('timezone') ?? config('app.timezone');
@@ -58,7 +61,9 @@ class StudentPolicy
         return $mentor->studentAssignments()
             ->activeOn($date)
             ->whereBelongsTo($student)
-            ->exists();
+            ->exists()
+            ? true
+            : Response::denyAsNotFound();
     }
 
     /**

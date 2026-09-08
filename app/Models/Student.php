@@ -77,6 +77,31 @@ class Student extends Model
         return $this->hasMany(SimulationSession::class);
     }
 
+    public function learningRecommendations(): HasMany
+    {
+        return $this->hasMany(LearningRecommendation::class);
+    }
+
+    public function interventions(): HasMany
+    {
+        return $this->hasMany(Intervention::class);
+    }
+
+    public function mentorObservations(): HasMany
+    {
+        return $this->hasMany(MentorObservation::class);
+    }
+
+    public function holisticRecords(): HasMany
+    {
+        return $this->hasMany(HolisticRecord::class);
+    }
+
+    public function portfolioItems(): HasMany
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
+
     public function xpTransactions(): HasMany
     {
         return $this->hasMany(XpTransaction::class);

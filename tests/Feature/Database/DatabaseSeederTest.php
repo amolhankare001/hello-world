@@ -7,9 +7,12 @@ use App\Models\AcademicYear;
 use App\Models\Activity;
 use App\Models\Game;
 use App\Models\GameLevel;
+use App\Models\HolisticDomain;
+use App\Models\HolisticIndicator;
 use App\Models\Mentor;
 use App\Models\PracticeActivity;
 use App\Models\Question;
+use App\Models\RecommendationRule;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\Simulation;
@@ -53,6 +56,9 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(21, Game::query()->count());
         $this->assertSame(63, GameLevel::query()->count());
         $this->assertSame(17, Simulation::query()->count());
+        $this->assertSame(7, RecommendationRule::query()->count());
+        $this->assertSame(5, HolisticDomain::query()->count());
+        $this->assertSame(23, HolisticIndicator::query()->count());
         $this->assertSame(
             [
                 'ADDITION_ADVENTURE',

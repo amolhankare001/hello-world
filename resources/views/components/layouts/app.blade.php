@@ -36,7 +36,18 @@
                         <a class="nav-link" href="{{ route('games.index') }}">खेळ</a>
                         <a class="nav-link" href="{{ route('simulations.index') }}">अनुकरणे</a>
                         <a class="nav-link" href="{{ route('assessments.index') }}">चाचण्या</a>
+                        <a class="nav-link" href="{{ route('portfolio.mine') }}">पोर्टफोलिओ</a>
                     @endif
+                    <a class="nav-link" href="{{ route('reports.index') }}">अहवाल</a>
+                    <a class="nav-link position-relative" href="{{ route('notifications.index') }}">
+                        सूचना
+                        @if ($unreadNotificationCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                                {{ min(99, $unreadNotificationCount) }}
+                                <span class="visually-hidden">न वाचलेल्या सूचना</span>
+                            </span>
+                        @endif
+                    </a>
                     <span class="navbar-text">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -54,5 +65,6 @@
         @endif
         {{ $slot }}
     </main>
+    @stack('scripts')
 </body>
 </html>

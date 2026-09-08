@@ -28,4 +28,19 @@ class Mentor extends Model
     {
         return $this->hasMany(StudentMentorAssignment::class);
     }
+
+    public function interventions(): HasMany
+    {
+        return $this->hasMany(Intervention::class);
+    }
+
+    public function observations(): HasMany
+    {
+        return $this->hasMany(MentorObservation::class);
+    }
+
+    public function holisticRecords(): HasMany
+    {
+        return $this->hasMany(HolisticRecord::class);
+    }
 }

@@ -11,6 +11,7 @@ use App\Models\Game;
 use App\Models\HolisticDomain;
 use App\Models\Mentor;
 use App\Models\Question;
+use App\Models\RecommendationRule;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -177,6 +178,7 @@ class DatabaseSeeder extends Seeder
             $this->createDemoSimulations($platformAdministrator);
             $this->createDemoPracticeContent($platformAdministrator);
             $this->createDemoAssessments($school, $academicYear, $schoolClass, $platformAdministrator);
+            $this->createRecommendationRules();
 
             Badge::query()->create([
                 'code' => 'FIRST_STEP',
@@ -263,18 +265,7 @@ class DatabaseSeeder extends Seeder
                 Badge::query()->create($badge);
             }
 
-            foreach ([
-                ['LEARNING', 'Learning habits', 'अध्ययन सवयी'],
-                ['COMMUNICATION', 'Communication', 'संवाद'],
-                ['SOCIAL_EMOTIONAL', 'Social and emotional growth', 'सामाजिक आणि भावनिक विकास'],
-            ] as $index => [$code, $name, $nameMarathi]) {
-                HolisticDomain::query()->create([
-                    'code' => $code,
-                    'name' => $name,
-                    'name_marathi' => $nameMarathi,
-                    'sort_order' => $index + 1,
-                ]);
-            }
+            $this->createHolisticFramework();
 
             $students->each(fn (Student $student) => $student->skillProgress()->createMany(
                 Skill::query()->get()->map(fn (Skill $skill) => [
@@ -283,6 +274,185 @@ class DatabaseSeeder extends Seeder
                 ])->all()
             ));
         });
+    }
+
+    private function createHolisticFramework(): void
+    {
+        $ratingScale = [
+            1 => ['en' => 'Beginning', 'mr' => 'सुरुवात'],
+            2 => ['en' => 'Developing', 'mr' => 'विकसनशील'],
+            3 => ['en' => 'Progressing', 'mr' => 'प्रगतीशील'],
+            4 => ['en' => 'Proficient', 'mr' => 'निपुण'],
+            5 => ['en' => 'Advanced', 'mr' => 'प्रगत'],
+        ];
+        $domains = [
+            [
+                'code' => 'ACADEMIC',
+                'name' => 'Academic development',
+                'name_marathi' => 'शैक्षणिक विकास',
+                'indicators' => [
+                    ['READING', 'Reading', 'वाचन'],
+                    ['WRITING', 'Writing', 'लेखन'],
+                    ['NUMERACY', 'Numeracy', 'संख्याज्ञान'],
+                    ['CONCEPT_UNDERSTANDING', 'Concept understanding', 'संकल्पना समज'],
+                    ['PROBLEM_SOLVING', 'Problem solving', 'समस्या निराकरण'],
+                ],
+            ],
+            [
+                'code' => 'LEARNING_BEHAVIOUR',
+                'name' => 'Learning behaviour',
+                'name_marathi' => 'अध्ययन वर्तन',
+                'indicators' => [
+                    ['PARTICIPATION', 'Participation', 'सहभाग'],
+                    ['REGULARITY', 'Regularity', 'नियमितता'],
+                    ['TASK_COMPLETION', 'Task completion', 'कार्य पूर्णता'],
+                    ['SELF_LEARNING', 'Self-learning', 'स्वयंअध्ययन'],
+                    ['PERSISTENCE', 'Persistence', 'चिकाटी'],
+                ],
+            ],
+            [
+                'code' => 'SOCIAL',
+                'name' => 'Social development',
+                'name_marathi' => 'सामाजिक विकास',
+                'indicators' => [
+                    ['TEAMWORK', 'Teamwork', 'संघकार्य'],
+                    ['COMMUNICATION', 'Communication', 'संवाद'],
+                    ['COOPERATION', 'Cooperation', 'सहकार्य'],
+                    ['HELPING_OTHERS', 'Helping others', 'इतरांना मदत'],
+                ],
+            ],
+            [
+                'code' => 'PERSONAL',
+                'name' => 'Personal development',
+                'name_marathi' => 'वैयक्तिक विकास',
+                'indicators' => [
+                    ['CONFIDENCE', 'Confidence', 'आत्मविश्वास'],
+                    ['RESPONSIBILITY', 'Responsibility', 'जबाबदारी'],
+                    ['SELF_EXPRESSION', 'Self-expression', 'स्व-अभिव्यक्ती'],
+                    ['INTEREST', 'Interest', 'आवड'],
+                    ['CREATIVITY', 'Creativity', 'सर्जनशीलता'],
+                ],
+            ],
+            [
+                'code' => 'DIGITAL_LEARNING',
+                'name' => 'Digital learning',
+                'name_marathi' => 'डिजिटल अध्ययन',
+                'indicators' => [
+                    ['GAME_PARTICIPATION', 'Game participation', 'खेळ सहभाग'],
+                    ['MATHEMATICS_PRACTICE', 'Mathematics practice', 'गणित सराव'],
+                    ['SIMULATION_PARTICIPATION', 'Simulation participation', 'अनुकरण सहभाग'],
+                    ['INDEPENDENT_LEARNING', 'Independent learning', 'स्वतंत्र अध्ययन'],
+                ],
+            ],
+        ];
+
+        foreach ($domains as $domainIndex => $definition) {
+            $domain = HolisticDomain::query()->create([
+                'code' => $definition['code'],
+                'name' => $definition['name'],
+                'name_marathi' => $definition['name_marathi'],
+                'sort_order' => $domainIndex + 1,
+            ]);
+
+            foreach ($definition['indicators'] as $indicatorIndex => [$code, $name, $nameMarathi]) {
+                $domain->indicators()->create([
+                    'code' => $code,
+                    'name' => $name,
+                    'name_marathi' => $nameMarathi,
+                    'rating_scale' => $ratingScale,
+                    'sort_order' => $indicatorIndex + 1,
+                ]);
+            }
+        }
+    }
+
+    private function createRecommendationRules(): void
+    {
+        foreach ([
+            [
+                'code' => 'RED_LOW_ACCURACY',
+                'title' => 'Very low accuracy',
+                'title_marathi' => 'अतिशय कमी अचूकता',
+                'signal' => 'accuracy',
+                'operator' => 'lt',
+                'threshold' => 50,
+                'risk_level' => 'red',
+                'minimum_events' => 3,
+                'sort_order' => 10,
+            ],
+            [
+                'code' => 'RED_LOW_MASTERY',
+                'title' => 'Very low mastery',
+                'title_marathi' => 'अतिशय कमी प्रभुत्व',
+                'signal' => 'mastery',
+                'operator' => 'lt',
+                'threshold' => 40,
+                'risk_level' => 'red',
+                'minimum_events' => 3,
+                'sort_order' => 20,
+            ],
+            [
+                'code' => 'RED_REPEATED_ERROR',
+                'title' => 'Repeated misconception',
+                'title_marathi' => 'वारंवार होणारी संकल्पना चूक',
+                'signal' => 'repeated_errors',
+                'operator' => 'gte',
+                'threshold' => 3,
+                'risk_level' => 'red',
+                'minimum_events' => 3,
+                'sort_order' => 30,
+            ],
+            [
+                'code' => 'RED_DECLINING_TREND',
+                'title' => 'Declining recent performance',
+                'title_marathi' => 'घटणारी अलीकडील कामगिरी',
+                'signal' => 'recent_trend',
+                'operator' => 'lte',
+                'threshold' => -20,
+                'risk_level' => 'red',
+                'minimum_events' => 6,
+                'sort_order' => 40,
+            ],
+            [
+                'code' => 'YELLOW_LOW_ACCURACY',
+                'title' => 'Accuracy needs practice',
+                'title_marathi' => 'अचूकतेसाठी अधिक सराव',
+                'signal' => 'accuracy',
+                'operator' => 'lt',
+                'threshold' => 70,
+                'risk_level' => 'yellow',
+                'minimum_events' => 2,
+                'sort_order' => 100,
+            ],
+            [
+                'code' => 'YELLOW_LOW_MASTERY',
+                'title' => 'Mastery needs practice',
+                'title_marathi' => 'प्रभुत्वासाठी अधिक सराव',
+                'signal' => 'mastery',
+                'operator' => 'lt',
+                'threshold' => 70,
+                'risk_level' => 'yellow',
+                'minimum_events' => 1,
+                'sort_order' => 110,
+            ],
+            [
+                'code' => 'YELLOW_LOW_FREQUENCY',
+                'title' => 'Practice frequency is low',
+                'title_marathi' => 'सरावाची वारंवारता कमी',
+                'signal' => 'practice_frequency',
+                'operator' => 'lt',
+                'threshold' => 2,
+                'risk_level' => 'yellow',
+                'minimum_events' => 3,
+                'sort_order' => 120,
+            ],
+        ] as $rule) {
+            RecommendationRule::query()->create([
+                ...$rule,
+                'guidance' => [],
+                'is_active' => true,
+            ]);
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -44,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::preventLazyLoading(! app()->isProduction());
         Paginator::useBootstrapFive();
+        View::composer('components.layouts.app', function (\Illuminate\View\View $view): void {
+            $view->with(
+                'unreadNotificationCount',
+                request()->user()?->unreadNotifications()->count() ?? 0,
+            );
+        });
 
         Route::bind('student', fn (string $value): Model => $this->tenantModel(Student::query(), $value));
         Route::bind('mentor', fn (string $value): Model => $this->tenantModel(Mentor::query(), $value));

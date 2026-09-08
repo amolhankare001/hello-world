@@ -146,6 +146,41 @@ a:focus-visible {
     padding: 0.75rem;
 }
 
+.mentor-student-card {
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.mentor-student-card:hover {
+    box-shadow: 0 0.75rem 2rem rgb(49 35 89 / 12%);
+    transform: translateY(-0.15rem);
+}
+
+.risk-dot {
+    border-radius: 50%;
+    display: inline-block;
+    flex: 0 0 1rem;
+    height: 1rem;
+    width: 1rem;
+}
+
+.risk-dot-red {
+    background: #dc3545;
+}
+
+.risk-dot-yellow {
+    background: #ffc107;
+}
+
+.risk-dot-green {
+    background: #198754;
+}
+
+.learning-path-list {
+    border-left: 0.2rem solid #ded7f6;
+    list-style-position: inside;
+    padding-left: 1rem;
+}
+
 @media (max-width: 575.98px) {
     .student-stat {
         min-height: 4.75rem;

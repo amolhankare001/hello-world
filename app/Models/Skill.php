@@ -49,4 +49,9 @@ class Skill extends Model
     {
         return $this->hasMany(ErrorType::class);
     }
+
+    public function learningRecommendations(): HasMany
+    {
+        return $this->hasMany(LearningRecommendation::class);
+    }
 }

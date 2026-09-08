@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\InterventionActivityFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InterventionActivity extends Model
 {
+    /** @use HasFactory<InterventionActivityFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'intervention_id', 'activity_id', 'title', 'instructions', 'assigned_on', 'completed_on', 'mentor_notes',
     ];

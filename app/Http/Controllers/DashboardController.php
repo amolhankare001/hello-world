@@ -6,6 +6,8 @@ use App\Enums\RoleCode;
 use App\Models\Activity;
 use App\Models\DailyGoal;
 use App\Models\Game;
+use App\Models\Intervention;
+use App\Models\LearningRecommendation;
 use App\Models\Mentor;
 use App\Models\School;
 use App\Models\Skill;
@@ -16,12 +18,17 @@ use App\Models\StudentSkillProgress;
 use App\Models\Subject;
 use App\Models\User;
 use App\Models\XpTransaction;
+use App\Services\PortalNotificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly PortalNotificationService $notifications,
+    ) {}
+
     public function __invoke(Request $request): View
     {
         $user = $request->user();
@@ -43,15 +50,62 @@ class DashboardController extends Controller
     private function mentorDashboard(User $user): View
     {
         $mentor = $user->mentor;
+        $this->notifications->syncForMentor($mentor);
         $date = now($user->school->timezone)->toDateString();
         $assignments = $mentor->studentAssignments()
             ->activeOn($date)
-            ->with('student.user')
+            ->with(['student.user', 'academicYear'])
             ->orderByDesc('is_primary')
             ->orderBy('id')
             ->get();
+        $assignmentKeys = $assignments->mapWithKeys(
+            fn ($assignment): array => [
+                $assignment->student_id.'-'.$assignment->academic_year_id => true,
+            ],
+        );
+        $recommendations = LearningRecommendation::query()
+            ->whereIn('student_id', $assignments->pluck('student_id'))
+            ->whereIn('academic_year_id', $assignments->pluck('academic_year_id'))
+            ->whereIn('status', [
+                LearningRecommendation::STATUS_PENDING,
+                LearningRecommendation::STATUS_MODIFIED,
+            ])
+            ->with(['student.user', 'skill.subject', 'items'])
+            ->orderByRaw("case when risk_level = 'red' then 1 else 2 end")
+            ->orderByDesc('generated_at')
+            ->get()
+            ->filter(fn (LearningRecommendation $recommendation): bool => $assignmentKeys->has(
+                $recommendation->student_id.'-'.$recommendation->academic_year_id,
+            ))
+            ->values();
+        $openInterventions = Intervention::query()
+            ->whereBelongsTo($mentor)
+            ->whereIn('student_id', $assignments->pluck('student_id'))
+            ->whereIn('status', ['planned', 'active'])
+            ->get()
+            ->groupBy('student_id');
+        $studentCards = $assignments->map(function ($assignment) use ($openInterventions, $recommendations): array {
+            $studentRecommendations = $recommendations
+                ->where('student_id', $assignment->student_id)
+                ->where('academic_year_id', $assignment->academic_year_id);
 
-        return view('dashboards.mentor', ['assignments' => $assignments]);
+            return [
+                'assignment' => $assignment,
+                'risk_level' => $studentRecommendations->contains('risk_level', 'red') ? 'red'
+                    : ($studentRecommendations->isNotEmpty() ? 'yellow' : 'green'),
+                'red_count' => $studentRecommendations->where('risk_level', 'red')->count(),
+                'yellow_count' => $studentRecommendations->where('risk_level', 'yellow')->count(),
+                'open_interventions' => $openInterventions->get($assignment->student_id, collect())->count(),
+            ];
+        });
+
+        return view('dashboards.mentor', [
+            'studentCards' => $studentCards,
+            'recommendations' => $recommendations,
+            'redCount' => $recommendations->where('risk_level', 'red')->count(),
+            'yellowCount' => $recommendations->where('risk_level', 'yellow')->count(),
+            'openInterventionCount' => $openInterventions->flatten()->count(),
+        ]);
     }
 
     private function studentDashboard(User $user): View
@@ -63,6 +117,9 @@ class DashboardController extends Controller
             ->latest('enrolled_on')
             ->first();
         $academicYear = $enrollment?->academicYear;
+        if ($academicYear !== null) {
+            $this->notifications->syncForStudent($student, $academicYear);
+        }
         $timezone = $user->school->timezone;
         $goalDate = now($timezone)->toDateString();
         $dailyGoal = $academicYear === null
