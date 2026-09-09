@@ -5,6 +5,8 @@ namespace Tests\Feature\Reports;
 use App\Enums\RoleCode;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
+use App\Models\Intervention;
+use App\Models\Mentor;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\Skill;
@@ -135,6 +137,34 @@ class ReportControllerTest extends TestCase
             ->assertSee('बेरीज')
             ->assertSee('05-09-2026')
             ->assertDontSee('01-08-2026');
+    }
+
+    public function test_mentor_intervention_report_renders_general_support_without_a_skill(): void
+    {
+        [$user, $school] = $this->schoolAdministrator();
+        $academicYear = AcademicYear::factory()->for($school)->create();
+        $student = $this->student($school, 'हस्तक्षेप विद्यार्थी');
+        $mentor = Mentor::factory()
+            ->for(User::factory()->for($school))
+            ->for($school)
+            ->create();
+        Intervention::factory()
+            ->for($student)
+            ->for($mentor)
+            ->for($academicYear)
+            ->create([
+                'skill_id' => null,
+                'title' => 'सामान्य अध्ययन मदत',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('reports.show', [
+                'report' => 'mentor_intervention',
+                'student_id' => $student->id,
+            ]))
+            ->assertOk()
+            ->assertSee('सामान्य मदत')
+            ->assertSee('सामान्य अध्ययन मदत');
     }
 
     /**

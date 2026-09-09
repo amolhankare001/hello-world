@@ -301,7 +301,7 @@
                             <tr>
                                 <td>{{ $intervention->student->user->name }}</td>
                                 <td>{{ $intervention->mentor->user->name }}</td>
-                                <td>{{ $intervention->skill->name_marathi }}</td>
+                                <td>{{ $intervention->skill?->name_marathi ?: 'सामान्य मदत' }}</td>
                                 <td>{{ $intervention->title }}</td>
                                 <td>{{ $intervention->status }}</td>
                                 <td>{{ $intervention->starts_on?->format('d-m-Y') }} – {{ $intervention->completed_on?->format('d-m-Y') ?: 'सुरू' }}</td>
