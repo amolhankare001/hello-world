@@ -22,9 +22,9 @@ class StreakFactory extends Factory
         return [
             'student_id' => Student::factory(),
             'academic_year_id' => AcademicYear::factory(),
-            'current_days' => 1,
-            'longest_days' => 1,
-            'last_activity_on' => today(),
+            'current_days' => 0,
+            'longest_days' => 0,
+            'last_activity_on' => null,
             'available_freezes' => 0,
         ];
     }
