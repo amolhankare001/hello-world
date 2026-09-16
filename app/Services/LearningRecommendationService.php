@@ -29,6 +29,14 @@ class LearningRecommendationService
      */
     public function sync(Student $student, AcademicYear $academicYear): Collection
     {
+        $enrollment = $student->enrollments()
+            ->whereBelongsTo($academicYear)
+            ->where('status', 'active')
+            ->with('division.schoolClass')
+            ->latest('enrolled_on')
+            ->first();
+        $gradeLevel = $enrollment?->division->schoolClass->grade_level;
+        $schoolClassId = $enrollment?->division->school_class_id;
         $analyses = $this->analytics
             ->analyze($student, $academicYear)
             ->filter(fn (array $analysis): bool => $analysis['risk_level'] !== 'green'
@@ -53,7 +61,12 @@ class LearningRecommendationService
             ])
             ->update(['status' => LearningRecommendation::STATUS_RESOLVED]);
 
-        return $analyses->map(function (array $analysis) use ($academicYear, $student): LearningRecommendation {
+        return $analyses->map(function (array $analysis) use (
+            $academicYear,
+            $gradeLevel,
+            $schoolClassId,
+            $student,
+        ): LearningRecommendation {
             /** @var Skill $skill */
             $skill = $analysis['skill'];
             $reason = $this->reason($skill, $analysis['metrics'], false);
@@ -62,8 +75,10 @@ class LearningRecommendationService
             return DB::transaction(function () use (
                 $academicYear,
                 $analysis,
+                $gradeLevel,
                 $reason,
                 $reasonMarathi,
+                $schoolClassId,
                 $skill,
                 $student,
             ): LearningRecommendation {
@@ -105,7 +120,9 @@ class LearningRecommendationService
 
                 if ($recommendation->status === LearningRecommendation::STATUS_PENDING) {
                     $recommendation->items()->delete();
-                    $recommendation->items()->createMany($this->path($student, $academicYear, $skill));
+                    $recommendation->items()->createMany(
+                        $this->path($student, $academicYear, $skill, $gradeLevel, $schoolClassId),
+                    );
                 }
 
                 return $recommendation->load(['skill.subject', 'items', 'intervention']);
@@ -261,8 +278,13 @@ class LearningRecommendationService
     /**
      * @return list<array<string, mixed>>
      */
-    private function path(Student $student, AcademicYear $academicYear, Skill $skill): array
-    {
+    private function path(
+        Student $student,
+        AcademicYear $academicYear,
+        Skill $skill,
+        ?int $gradeLevel,
+        ?int $schoolClassId,
+    ): array {
         $simulation = Simulation::query()
             ->where('status', 'published')
             ->whereHas('skills', fn (Builder $query): Builder => $query->whereKey($skill->id))
@@ -282,7 +304,8 @@ class LearningRecommendationService
             ->where('status', 'published')
             ->whereHas('skills', fn (Builder $query): Builder => $query->whereKey($skill->id))
             ->orderBy('id')
-            ->first();
+            ->get()
+            ->first(fn (Game $game): bool => $gradeLevel === null || $game->supportsGrade($gradeLevel));
         $assessment = Test::query()
             ->where('status', 'published')
             ->where('subject_id', $skill->subject_id)
@@ -292,6 +315,9 @@ class LearningRecommendationService
             ->where(fn (Builder $query): Builder => $query
                 ->whereNull('academic_year_id')
                 ->orWhere('academic_year_id', $academicYear->id))
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('school_class_id')
+                ->orWhere('school_class_id', $schoolClassId))
             ->orderByRaw("case when type = 'post_test' then 1 when type = 'diagnostic' then 2 else 3 end")
             ->orderBy('id')
             ->first();

@@ -205,6 +205,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
                 ->name('recommendations.refresh');
             Route::get('students/{student}/progress', [MentorStudentProgressController::class, 'show'])
                 ->name('students.show');
+            Route::post(
+                'students/{student}/assessments/{test}/assign',
+                [MentorStudentProgressController::class, 'assignAssessment'],
+            )->name('students.assessments.assign');
             Route::get(
                 'students/{student}/holistic-observations/create',
                 [MentorHolisticProgressController::class, 'create'],

@@ -64,4 +64,9 @@ class Test extends Model
     {
         return $this->hasMany(TestAttempt::class);
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(AssessmentAssignment::class);
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\Game;
 use App\Models\GameLevel;
 use App\Models\HolisticDomain;
 use App\Models\HolisticIndicator;
+use App\Models\LearningOutcome;
 use App\Models\Mentor;
 use App\Models\PracticeActivity;
 use App\Models\Question;
@@ -47,14 +48,25 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(15, StudentEnrollment::query()->count());
         $this->assertSame(15, StudentMentorAssignment::query()->count());
         $this->assertSame(2, Subject::query()->count());
-        $this->assertSame(30, Skill::query()->count());
-        $this->assertSame(90, SkillLevel::query()->count());
-        $this->assertSame(32, Activity::query()->count());
+        $this->assertSame(49, Skill::query()->count());
+        $this->assertSame(147, SkillLevel::query()->count());
+        $this->assertSame(51, Activity::query()->count());
         $this->assertSame(2, PracticeActivity::query()->count());
-        $this->assertSame(6, Question::query()->count());
-        $this->assertSame(3, Test::query()->count());
-        $this->assertSame(21, Game::query()->count());
-        $this->assertSame(63, GameLevel::query()->count());
+        $this->assertSame(90, Question::query()->count());
+        $this->assertSame(4, Test::query()->count());
+        $this->assertSame(22, LearningOutcome::query()->where('grade_level', 4)->count());
+        $this->assertSame(
+            84,
+            Question::query()->whereNotNull('learning_outcome_id')->count(),
+        );
+        $this->assertSame(
+            4,
+            Test::query()
+                ->whereHas('questions.learningOutcome', fn ($query) => $query->where('grade_level', 4))
+                ->count(),
+        );
+        $this->assertSame(40, Game::query()->count());
+        $this->assertSame(120, GameLevel::query()->count());
         $this->assertSame(17, Simulation::query()->count());
         $this->assertSame(7, RecommendationRule::query()->count());
         $this->assertSame(5, HolisticDomain::query()->count());
@@ -63,23 +75,42 @@ class DatabaseSeederTest extends TestCase
             [
                 'ADDITION_ADVENTURE',
                 'AKSHAR_PAKDA',
+                'ALGEBRA_BALANCE',
+                'ANGLE_DETECTIVE',
+                'ANTONYM_PAIRS',
                 'BUILD_THE_WORD',
+                'CLOCK_CALENDAR_QUEST',
+                'DATA_GRAPH_CHALLENGE',
+                'DECIMAL_MARKET',
                 'DIVISION_SHARING_GAME',
+                'FACTOR_MULTIPLE_LAB',
                 'FIND_CORRECT_WORD',
                 'FRACTION_PIZZA',
+                'GENDER_NUMBER_SORT',
                 'GREATER_OR_SMALLER',
+                'IDIOM_CONTEXT',
+                'INTEGER_ELEVATOR',
                 'LISTEN_AND_SELECT',
                 'MATRA_BALLOONS',
                 'MULTIPLICATION_SPACE_MISSION',
                 'NUMBER_CATCH',
                 'NUMBER_LINE_JUMP',
                 'NUMBER_TRAIN',
+                'PATTERN_CODE_BREAKER',
+                'PERCENTAGE_TARGET',
+                'PERIMETER_AREA_BUILDER',
                 'PICTURE_WORD_MATCH',
                 'PLACE_VALUE_HOUSE',
+                'POETRY_EXPLORER',
+                'PUNCTUATION_RESCUE',
+                'RATIO_RECIPE',
                 'READING_CHALLENGE',
                 'SENTENCE_MATCH',
                 'SHOPPING_GAME',
                 'SUBTRACTION_ADVENTURE',
+                'SYNONYM_PAIRS',
+                'TENSE_TRAVEL',
+                'WORD_CLASS_DETECTIVE',
                 'WORD_ORDER',
                 'WORD_TRAIN',
             ],
@@ -107,7 +138,7 @@ class DatabaseSeederTest extends TestCase
             ],
             Simulation::query()->orderBy('code')->pluck('code')->all(),
         );
-        $this->assertSame(450, StudentSkillProgress::query()->count());
+        $this->assertSame(735, StudentSkillProgress::query()->count());
         $this->assertSame(18, User::query()->count());
         $this->assertSame(
             RoleCode::SuperAdmin,
@@ -136,6 +167,27 @@ class DatabaseSeederTest extends TestCase
                     );
                 }
             });
+    }
+
+    public function test_number_catch_localizes_labels_without_changing_answer_values(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $game = Game::query()
+            ->with(['levels' => fn ($query) => $query->orderBy('level'), 'skills'])
+            ->where('code', 'NUMBER_CATCH')
+            ->firstOrFail();
+
+        $question = app(GameQuestionProvider::class)->generate(
+            $game,
+            $game->levels->firstOrFail(),
+            $game->skills,
+        )[0];
+        $expectedValue = data_get($question, 'expected_answer.value');
+        $expectedChoice = collect($question['choices'])->firstWhere('value', $expectedValue);
+
+        $this->assertMatchesRegularExpression('/^[0-9]+$/', $expectedValue);
+        $this->assertMatchesRegularExpression('/^[०-९]+$/u', $expectedChoice['label']);
+        $this->assertSame(60000, $question['response_time_limit_ms']);
     }
 
     public function test_every_seeded_simulation_generates_a_valid_interactive_round(): void

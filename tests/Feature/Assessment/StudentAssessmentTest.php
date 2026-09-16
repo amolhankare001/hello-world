@@ -4,10 +4,17 @@ namespace Tests\Feature\Assessment;
 
 use App\Enums\RoleCode;
 use App\Models\AcademicYear;
+use App\Models\Activity;
+use App\Models\AssessmentAssignment;
 use App\Models\Division;
 use App\Models\ErrorType;
+use App\Models\Game;
+use App\Models\LearningOutcome;
+use App\Models\LearningRecommendation;
 use App\Models\Mentor;
+use App\Models\PracticeActivity;
 use App\Models\Question;
+use App\Models\RecommendationRule;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -53,7 +60,9 @@ class StudentAssessmentTest extends TestCase
         ]);
         $this->assessment($subject, $this->questions($subject), $student->school, [
             'title' => 'Other class',
-            'school_class_id' => SchoolClass::factory()->for($student->school)->create()->id,
+            'school_class_id' => SchoolClass::factory()->for($student->school)->create([
+                'grade_level' => 5,
+            ])->id,
         ]);
 
         $this->actingAs($studentUser)
@@ -170,6 +179,142 @@ class StudentAssessmentTest extends TestCase
             ->assertSee('50%');
     }
 
+    public function test_pre_test_classifies_learning_outcome_and_creates_targeted_game_recommendation(): void
+    {
+        [$studentUser, $student, $academicYear] = $this->studentContext();
+        $subject = Subject::factory()->create();
+        $skill = Skill::factory()->for($subject)->create();
+        $learningOutcome = LearningOutcome::factory()->for($subject)->for($skill)->create([
+            'code' => 'STD4-MATH-TEST',
+            'statement_marathi' => 'विद्यार्थी अनेक अंकी संख्यांची बेरीज करतो.',
+            'competency_marathi' => 'बेरीज',
+        ]);
+        $errorType = ErrorType::factory()->for($skill)->create();
+        $questions = collect([
+            $this->numberQuestion($skill, 5, $errorType),
+            $this->numberQuestion($skill, 8, $errorType),
+            $this->numberQuestion($skill, 12, $errorType),
+        ]);
+        $questions->each->update(['learning_outcome_id' => $learningOutcome->id]);
+        $test = $this->assessment($subject, $questions, $student->school, [
+            'type' => 'pre_test',
+            'question_count' => 3,
+        ]);
+        RecommendationRule::factory()->create([
+            'code' => 'CLASS4_WEAK_ACCURACY',
+            'signal' => 'accuracy',
+            'operator' => 'lt',
+            'threshold' => 60,
+            'risk_level' => 'red',
+            'minimum_events' => 2,
+            'sort_order' => 1,
+        ]);
+        $game = Game::factory()->create([
+            'status' => 'published',
+            'configuration' => ['grade_min' => 4, 'grade_max' => 4],
+        ]);
+        $game->skills()->attach($skill, ['weight' => 1]);
+        $activity = Activity::factory()->for($skill)->create([
+            'school_id' => $student->school_id,
+            'type' => 'practice',
+            'status' => 'published',
+            'difficulty' => 1,
+        ]);
+        PracticeActivity::factory()->for($activity)->create();
+
+        $attempt = $this->complete($studentUser, $student, $test, [
+            $questions[0]->id => '5',
+            $questions[1]->id => '0',
+            $questions[2]->id => '0',
+        ]);
+
+        $this->assertSame('needs_support', data_get($attempt->diagnosis, 'learning_outcomes.0.classification'));
+        $this->assertSame(33.33, data_get($attempt->diagnosis, 'learning_outcomes.0.accuracy'));
+        $this->assertSame(2, data_get($attempt->diagnosis, 'learning_outcomes.0.errors.0.count'));
+        $this->assertSame(33.33, data_get($attempt->diagnosis, 'learning_outcomes.0.pre_test_score'));
+        $recommendation = LearningRecommendation::query()
+            ->whereBelongsTo($student)
+            ->whereBelongsTo($skill)
+            ->with('items')
+            ->sole();
+        $this->assertSame(
+            $game->id,
+            $recommendation->items->firstWhere('resource_type', 'game')->resource_id,
+        );
+        $this->actingAs($studentUser)
+            ->get(route('assessments.attempts.result', $attempt))
+            ->assertSee(route('practice.start', $activity), false)
+            ->assertSee(route('games.start', $game), false);
+    }
+
+    public function test_learning_outcome_classification_uses_strength_developing_and_support_thresholds(): void
+    {
+        [$studentUser, $student] = $this->studentContext();
+        $subject = Subject::factory()->create();
+        $answers = [];
+        $questions = collect();
+        $expectedClassifications = [
+            'STD4-THRESHOLD-STRENGTH' => ['correct' => 4, 'classification' => 'strength'],
+            'STD4-THRESHOLD-DEVELOPING' => ['correct' => 3, 'classification' => 'developing'],
+            'STD4-THRESHOLD-SUPPORT' => ['correct' => 2, 'classification' => 'needs_support'],
+        ];
+
+        foreach ($expectedClassifications as $code => $expectation) {
+            $skill = Skill::factory()->for($subject)->create();
+            $learningOutcome = LearningOutcome::factory()->for($subject)->for($skill)->create([
+                'code' => $code,
+            ]);
+
+            foreach (range(1, 5) as $index) {
+                $question = $this->numberQuestion($skill, $index);
+                $question->update(['learning_outcome_id' => $learningOutcome->id]);
+                $questions->push($question);
+                $answers[$question->id] = $index <= $expectation['correct'] ? (string) $index : '0';
+            }
+        }
+
+        $test = $this->assessment($subject, $questions, $student->school, [
+            'type' => 'pre_test',
+            'question_count' => 15,
+        ]);
+
+        $attempt = $this->complete($studentUser, $student, $test, $answers);
+        $classifications = collect($attempt->diagnosis['learning_outcomes'])
+            ->pluck('classification', 'code');
+
+        $this->assertSame('strength', $classifications['STD4-THRESHOLD-STRENGTH']);
+        $this->assertSame('developing', $classifications['STD4-THRESHOLD-DEVELOPING']);
+        $this->assertSame('needs_support', $classifications['STD4-THRESHOLD-SUPPORT']);
+    }
+
+    public function test_assigned_assessment_moves_from_in_progress_to_completed(): void
+    {
+        [$studentUser, $student, $academicYear] = $this->studentContext();
+        $subject = Subject::factory()->create();
+        $question = $this->questions($subject)->first();
+        $test = $this->assessment($subject, collect([$question]), $student->school);
+        $assignment = AssessmentAssignment::factory()
+            ->for($test)
+            ->for($student)
+            ->for($academicYear)
+            ->create();
+
+        $this->actingAs($studentUser)->post(route('assessments.start', $test));
+
+        $this->assertSame(
+            AssessmentAssignment::STATUS_IN_PROGRESS,
+            $assignment->fresh()->status,
+        );
+        $attempt = $student->testAttempts()->sole();
+        $this->actingAs($studentUser)->post(
+            route('assessments.attempts.submit', $attempt),
+            ['answers' => [$question->id => '1']],
+        );
+        $assignment->refresh();
+        $this->assertSame(AssessmentAssignment::STATUS_COMPLETED, $assignment->status);
+        $this->assertNotNull($assignment->completed_at);
+    }
+
     public function test_completed_submission_is_replay_safe(): void
     {
         [$studentUser, $student] = $this->studentContext();
@@ -245,6 +390,8 @@ class StudentAssessmentTest extends TestCase
             $this->numberQuestion($skill, 3),
             $this->numberQuestion($skill, 4),
         ]);
+        $learningOutcome = LearningOutcome::factory()->for($subject)->for($skill)->create();
+        $questions->each->update(['learning_outcome_id' => $learningOutcome->id]);
         $preTest = $this->assessment($subject, $questions, $student->school, [
             'type' => 'pre_test',
             'question_count' => 4,
@@ -273,6 +420,9 @@ class StudentAssessmentTest extends TestCase
         $this->assertSame(75, data_get($postAttempt->diagnosis, 'comparison.post_test_percentage'));
         $this->assertSame(25, data_get($postAttempt->diagnosis, 'comparison.percentage_point_improvement'));
         $this->assertSame(50, data_get($postAttempt->diagnosis, 'comparison.relative_improvement_percent'));
+        $this->assertSame(50, data_get($postAttempt->diagnosis, 'learning_outcomes.0.pre_test_score'));
+        $this->assertSame(75, data_get($postAttempt->diagnosis, 'learning_outcomes.0.post_test_score'));
+        $this->assertSame(25, data_get($postAttempt->diagnosis, 'learning_outcomes.0.percentage_point_improvement'));
         $this->assertDatabaseHas('student_skill_progress', [
             'student_id' => $student->id,
             'skill_id' => $skill->id,
@@ -314,7 +464,7 @@ class StudentAssessmentTest extends TestCase
         $academicYear = AcademicYear::query()->whereBelongsTo($school)->first()
             ?? AcademicYear::factory()->for($school)->create();
         $schoolClass = SchoolClass::query()->whereBelongsTo($school)->first()
-            ?? SchoolClass::factory()->for($school)->create();
+            ?? SchoolClass::factory()->for($school)->create(['grade_level' => 4]);
         $division = Division::query()->whereBelongsTo($schoolClass)->first()
             ?? Division::factory()->for($schoolClass)->create();
         StudentEnrollment::query()->create([

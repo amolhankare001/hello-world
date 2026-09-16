@@ -13,9 +13,9 @@ class Question extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'skill_id', 'activity_id', 'error_type_id', 'created_by', 'type', 'prompt', 'prompt_marathi',
-        'audio_path', 'media_path', 'correct_answer', 'explanation', 'explanation_marathi',
-        'difficulty', 'marks', 'is_active',
+        'skill_id', 'learning_outcome_id', 'activity_id', 'error_type_id', 'created_by', 'type',
+        'prompt', 'prompt_marathi', 'audio_path', 'media_path', 'correct_answer', 'explanation',
+        'explanation_marathi', 'difficulty', 'marks', 'is_active',
     ];
 
     protected function casts(): array
@@ -26,6 +26,11 @@ class Question extends Model
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);
+    }
+
+    public function learningOutcome(): BelongsTo
+    {
+        return $this->belongsTo(LearningOutcome::class);
     }
 
     public function activity(): BelongsTo

@@ -40,6 +40,11 @@ class Skill extends Model
         return $this->hasMany(SkillLevel::class);
     }
 
+    public function learningOutcomes(): HasMany
+    {
+        return $this->hasMany(LearningOutcome::class);
+    }
+
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);

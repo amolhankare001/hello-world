@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\Badge;
 use App\Models\DailyGoal;
 use App\Models\Division;
+use App\Models\LearningOutcome;
 use App\Models\PracticeActivity;
 use App\Models\Role;
 use App\Models\School;
@@ -51,7 +52,18 @@ class StudentDashboardTest extends TestCase
             'academic_year_id' => $academicYear->id,
             'mastery_score' => 65,
             'status' => 'in_progress',
+            'pre_test_score' => 45,
+            'post_test_score' => 70,
+            'improvement' => 25,
         ]);
+        LearningOutcome::factory()->for($marathi)->for($wordSkill)->create([
+            'statement_marathi' => 'विद्यार्थी परिच्छेद वाचून अर्थ समजतो.',
+        ]);
+        LearningOutcome::factory()
+            ->count(6)
+            ->for($marathi)
+            ->recycle(Skill::factory()->count(6)->for($marathi)->create())
+            ->create();
         $activity = Activity::factory()->for($wordSkill)->create([
             'school_id' => $student->school_id,
             'type' => 'practice',
@@ -83,6 +95,10 @@ class StudentDashboardTest extends TestCase
             ->assertSee('गणित')
             ->assertSee('शब्द ओळख सराव')
             ->assertSee('शब्दमित्र')
+            ->assertSee('विद्यार्थी परिच्छेद वाचून अर्थ समजतो.')
+            ->assertSee('पूर्व चाचणी: 45%')
+            ->assertSee('उत्तर चाचणी: 70%')
+            ->assertSee('सुधारणा: 25 गुण')
             ->assertDontSee('slow learner');
     }
 
@@ -137,7 +153,7 @@ class StudentDashboardTest extends TestCase
         ]);
         $student = Student::factory()->for($user)->for($school)->create();
         $academicYear = AcademicYear::factory()->for($school)->create();
-        $schoolClass = SchoolClass::factory()->for($school)->create();
+        $schoolClass = SchoolClass::factory()->for($school)->create(['grade_level' => 4]);
         $division = Division::factory()->for($schoolClass)->create();
         StudentEnrollment::query()->create([
             'student_id' => $student->id,

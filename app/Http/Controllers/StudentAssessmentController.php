@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Assessment\SubmitTestAttemptRequest;
+use App\Models\AssessmentAssignment;
+use App\Models\Game;
+use App\Models\LearningRecommendation;
 use App\Models\Question;
+use App\Models\Simulation;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\Test;
@@ -65,8 +69,13 @@ class StudentAssessmentController extends Controller
             ->latest('submitted_at')
             ->limit(10)
             ->get();
+        $assignmentsByTest = AssessmentAssignment::query()
+            ->whereBelongsTo($student)
+            ->whereBelongsTo($enrollment->academicYear)
+            ->get()
+            ->keyBy('test_id');
 
-        return view('assessments.index', compact('tests', 'recentAttempts'));
+        return view('assessments.index', compact('assignmentsByTest', 'tests', 'recentAttempts'));
     }
 
     public function start(Request $request, Test $test): RedirectResponse
@@ -122,6 +131,14 @@ class StudentAssessmentController extends Controller
                 'diagnosis' => ['question_ids' => $questionIds],
             ]);
         });
+        AssessmentAssignment::query()
+            ->whereBelongsTo($test)
+            ->whereBelongsTo($student)
+            ->where('academic_year_id', $enrollment->academic_year_id)
+            ->update([
+                'status' => AssessmentAssignment::STATUS_IN_PROGRESS,
+                'started_at' => now(),
+            ]);
 
         return redirect()->route('assessments.attempts.show', $attempt);
     }
@@ -169,10 +186,37 @@ class StudentAssessmentController extends Controller
             'answers.question.options',
         ]);
 
+        $recommendations = LearningRecommendation::query()
+            ->whereBelongsTo($studentTestAttempt->student)
+            ->whereBelongsTo($studentTestAttempt->academicYear)
+            ->whereIn('skill_id', collect(data_get($studentTestAttempt->diagnosis, 'skills', []))
+                ->where('classification', 'needs_support')
+                ->pluck('skill_id'))
+            ->whereIn('status', [
+                LearningRecommendation::STATUS_PENDING,
+                LearningRecommendation::STATUS_MODIFIED,
+                LearningRecommendation::STATUS_ACCEPTED,
+            ])
+            ->with(['skill.subject', 'items'])
+            ->orderByRaw("case when risk_level = 'red' then 1 else 2 end")
+            ->get();
+        $gameRouteKeys = Game::query()
+            ->whereIn('id', $recommendations->flatMap->items->where('resource_type', 'game')->pluck('resource_id'))
+            ->pluck('code', 'id');
+        $simulationRouteKeys = Simulation::query()
+            ->whereIn(
+                'id',
+                $recommendations->flatMap->items->where('resource_type', 'simulation')->pluck('resource_id'),
+            )
+            ->pluck('code', 'id');
+
         return view('assessments.result', [
             'attempt' => $studentTestAttempt,
             'questions' => $studentTestAttempt->answers->pluck('question')->keyBy('id'),
             'isMentorView' => false,
+            'recommendations' => $recommendations,
+            'gameRouteKeys' => $gameRouteKeys,
+            'simulationRouteKeys' => $simulationRouteKeys,
         ]);
     }
 

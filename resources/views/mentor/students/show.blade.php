@@ -47,6 +47,72 @@
 
     <section class="card portal-card mb-4">
         <div class="card-header bg-white border-0 pt-4 px-4">
+            <h2 class="h4 mb-1">{{ $gradeLevel !== null ? 'इयत्ता '.$gradeLevel : 'विद्यार्थी' }} पूर्व चाचणी</h2>
+            <p class="text-secondary mb-0">निवडलेल्या विद्यार्थ्याला विषयानुसार पूर्व चाचणी द्या.</p>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach ($preTests as $test)
+                    @php
+                        $assessmentAssignment = $assessmentAssignments->get($test->id);
+                    @endphp
+                    <div class="col-md-6">
+                        <article class="border rounded-4 p-3 h-100">
+                            <span class="badge text-bg-light">{{ $test->subject->name_marathi }}</span>
+                            <h3 class="h5 mt-2">{{ $test->title_marathi }}</h3>
+                            <p class="small text-secondary">{{ $test->question_count }} प्रश्न · {{ $test->duration_minutes }} मिनिटे</p>
+                            @if ($assessmentAssignment)
+                                <div class="small mb-2">स्थिती: <strong>{{ str_replace('_', ' ', $assessmentAssignment->status) }}</strong></div>
+                            @endif
+                            <form method="POST" action="{{ route('mentor.students.assessments.assign', [$student, $test]) }}">
+                                @csrf
+                                <button class="btn btn-primary" type="submit">{{ $assessmentAssignment ? 'पुन्हा द्या' : 'पूर्व चाचणी द्या' }}</button>
+                            </form>
+                        </article>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section class="card portal-card mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+            <h2 class="h4 mb-1">{{ $gradeLevel !== null ? 'इयत्ता '.$gradeLevel : 'विद्यार्थी' }} अध्ययन निष्पत्ती प्रगती</h2>
+            <p class="text-secondary mb-0">पूर्व चाचणी, सध्याचे प्रभुत्व, उत्तर चाचणी आणि सुधारणा.</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>विषय / अध्ययन निष्पत्ती</th><th>क्षमता</th><th>पूर्व चाचणी</th><th>सध्याचे प्रभुत्व</th><th>उत्तर चाचणी</th><th>सुधारणा</th><th>स्थिती</th></tr></thead>
+                <tbody>
+                    @foreach ($learningOutcomes as $entry)
+                        @php
+                            $outcome = $entry['outcome'];
+                            $progress = $entry['progress'];
+                            $mastery = (float) ($progress?->mastery_score ?? 0);
+                        @endphp
+                        <tr>
+                            <td><span class="badge text-bg-light">{{ $outcome->subject->name_marathi }}</span><strong class="d-block mt-1">{{ $outcome->statement_marathi }}</strong><span class="small text-secondary">{{ $outcome->code }}</span></td>
+                            <td>{{ $outcome->competency_marathi }}</td>
+                            <td>{{ $progress?->pre_test_score !== null ? number_format((float) $progress->pre_test_score, 0).'%' : '—' }}</td>
+                            <td>{{ $progress ? number_format($mastery, 0).'%' : 'मोजणी बाकी' }}</td>
+                            <td>{{ $progress?->post_test_score !== null ? number_format((float) $progress->post_test_score, 0).'%' : '—' }}</td>
+                            <td class="{{ (float) ($progress?->improvement ?? 0) > 0 ? 'text-success' : '' }}">{{ $progress?->improvement !== null ? number_format((float) $progress->improvement, 0).' गुण' : '—' }}</td>
+                            <td>
+                                @if ($progress)
+                                    <span class="badge {{ $mastery >= 80 ? 'text-bg-success' : ($mastery >= 60 ? 'text-bg-primary' : 'text-bg-warning') }}">{{ $mastery >= 80 ? 'साध्य' : ($mastery >= 60 ? 'विकसनशील' : 'मदत आवश्यक') }}</span>
+                                @else
+                                    <span class="badge text-bg-light">अजून मोजले नाही</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card portal-card mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4">
             <h2 class="h4 mb-1">कौशल्य निदान</h2>
             <p class="text-secondary mb-0">प्रभुत्व, अचूकता, सराव, खेळ, अनुकरण, चुका आणि अलीकडील कल स्वतंत्रपणे पाहा.</p>
         </div>

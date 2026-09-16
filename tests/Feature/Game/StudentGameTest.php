@@ -58,6 +58,34 @@ class StudentGameTest extends TestCase
             ->assertDontSee($unconfiguredGame->title);
     }
 
+    public function test_class_four_student_lists_only_games_supporting_their_grade(): void
+    {
+        [$user] = $this->studentContext();
+        $classFourGame = $this->game('Class four game');
+        $classFourGame->update(['configuration' => ['grade_min' => 4, 'grade_max' => 6]]);
+        $upperGradeGame = $this->game('Upper grade game');
+        $upperGradeGame->update(['configuration' => ['grade_min' => 5, 'grade_max' => 7]]);
+
+        $this->actingAs($user)
+            ->get(route('games.index'))
+            ->assertOk()
+            ->assertSee($classFourGame->title)
+            ->assertDontSee($upperGradeGame->title);
+    }
+
+    public function test_class_four_student_cannot_start_an_out_of_grade_game(): void
+    {
+        [$user] = $this->studentContext();
+        $upperGradeGame = $this->game('Upper grade game');
+        $upperGradeGame->update(['configuration' => ['grade_min' => 5, 'grade_max' => 7]]);
+
+        $this->actingAs($user)
+            ->post(route('games.start', $upperGradeGame))
+            ->assertNotFound();
+
+        $this->assertDatabaseCount('game_sessions', 0);
+    }
+
     public function test_student_starts_adaptive_game_with_frozen_server_questions(): void
     {
         [$user, $student, $academicYear] = $this->studentContext();
@@ -367,7 +395,7 @@ class StudentGameTest extends TestCase
         $academicYear = AcademicYear::query()->whereBelongsTo($school)->first()
             ?? AcademicYear::factory()->for($school)->create();
         $schoolClass = SchoolClass::query()->whereBelongsTo($school)->first()
-            ?? SchoolClass::factory()->for($school)->create();
+            ?? SchoolClass::factory()->for($school)->create(['grade_level' => 4]);
         $division = Division::query()->whereBelongsTo($schoolClass)->first()
             ?? Division::factory()->for($schoolClass)->create();
         StudentEnrollment::query()->create([

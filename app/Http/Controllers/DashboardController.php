@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\DailyGoal;
 use App\Models\Game;
 use App\Models\Intervention;
+use App\Models\LearningOutcome;
 use App\Models\LearningRecommendation;
 use App\Models\Mentor;
 use App\Models\School;
@@ -153,6 +154,21 @@ class DashboardController extends Controller
                 ->with('skill.subject:id,code,name,name_marathi')
                 ->get();
         $progressBySkill = $skillProgress->keyBy('skill_id');
+        $studentRecommendations = $academicYear === null
+            ? collect()
+            : LearningRecommendation::query()
+                ->whereBelongsTo($student)
+                ->whereBelongsTo($academicYear)
+                ->whereIn('status', [
+                    LearningRecommendation::STATUS_PENDING,
+                    LearningRecommendation::STATUS_MODIFIED,
+                    LearningRecommendation::STATUS_ACCEPTED,
+                ])
+                ->with(['skill.subject', 'items'])
+                ->orderByRaw("case when risk_level = 'red' then 1 else 2 end")
+                ->orderByDesc('generated_at')
+                ->get();
+        $recommendedSkillIds = $studentRecommendations->pluck('skill_id');
         $subjectProgress = Subject::query()
             ->where('is_active', true)
             ->where(fn (Builder $query): Builder => $query
@@ -182,9 +198,52 @@ class DashboardController extends Controller
             ->whereHas('practiceActivity')
             ->with(['skill.subject:id,code,name,name_marathi', 'practiceActivity:id,activity_id'])
             ->get()
-            ->sortBy(fn (Activity $activity): float => (float) ($progressBySkill->get($activity->skill_id)?->mastery_score ?? 0))
+            ->sortBy(fn (Activity $activity): array => [
+                $recommendedSkillIds->contains($activity->skill_id) ? 0 : 1,
+                (float) ($progressBySkill->get($activity->skill_id)?->mastery_score ?? 0),
+            ])
             ->take(3)
             ->values();
+        $gradeLevel = $enrollment?->division->schoolClass->grade_level;
+        $classLearningOutcomes = $gradeLevel === null
+            ? collect()
+            : LearningOutcome::query()
+                ->where('grade_level', $gradeLevel)
+                ->where('is_active', true)
+                ->with([
+                    'subject:id,code,name,name_marathi',
+                    'skill.subject:id,code,name,name_marathi',
+                ])
+                ->orderBy('subject_id')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (LearningOutcome $outcome): array => [
+                    'outcome' => $outcome,
+                    'progress' => $progressBySkill->get($outcome->skill_id),
+                ])
+                ->sortBy(fn (array $entry): array => [
+                    $entry['progress']?->post_test_score !== null
+                        ? 0
+                        : ($entry['progress'] !== null ? 1 : 2),
+                    (float) ($entry['progress']?->mastery_score ?? 0),
+                    $entry['outcome']->subject_id,
+                    $entry['outcome']->sort_order,
+                ])
+                ->values();
+        $recommendedGames = Game::query()
+            ->where('status', 'published')
+            ->whereHas('skills', fn (Builder $query): Builder => $query->whereIn('skills.id', $recommendedSkillIds))
+            ->with('skills:id,name,name_marathi')
+            ->orderBy('id')
+            ->get();
+        $todayGame = $recommendedGames
+            ->first(fn (Game $game): bool => $gradeLevel === null || $game->supportsGrade($gradeLevel))
+            ?? Game::query()
+                ->where('status', 'published')
+                ->with('skills:id,name,name_marathi')
+                ->orderBy('id')
+                ->get()
+                ->first(fn (Game $game): bool => $gradeLevel === null || $game->supportsGrade($gradeLevel));
         $marathiSubject = $subjectProgress
             ->first(fn (array $progress): bool => $progress['subject']->code === 'MARATHI')['subject'] ?? null;
         $journeyUnlocked = false;
@@ -251,11 +310,10 @@ class DashboardController extends Controller
                     ->get(),
             'subjectProgress' => $subjectProgress,
             'recommendedActivities' => $recommendedActivities,
+            'studentRecommendations' => $studentRecommendations,
+            'classLearningOutcomes' => $classLearningOutcomes,
             'learningJourney' => $learningJourney,
-            'todayGame' => Game::query()
-                ->where('status', 'published')
-                ->orderBy('id')
-                ->first(),
+            'todayGame' => $todayGame,
         ]);
     }
 }

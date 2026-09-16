@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AssessmentAssignment;
 use App\Models\Question;
 use App\Models\StudentSkillEvent;
 use App\Models\StudentSkillProgress;
@@ -19,6 +20,7 @@ class AssessmentAttemptService
     public function __construct(
         private PracticeAnswerEvaluator $answerEvaluator,
         private GamificationService $gamificationService,
+        private LearningRecommendationService $recommendations,
     ) {}
 
     /**
@@ -40,7 +42,12 @@ class AssessmentAttemptService
             $questionIds = data_get($lockedAttempt->diagnosis, 'question_ids', []);
             $questionsById = Question::query()
                 ->whereIn('id', $questionIds)
-                ->with(['options', 'skill:id,name,name_marathi', 'errorType:id,name,name_marathi'])
+                ->with([
+                    'options',
+                    'skill:id,name,name_marathi',
+                    'learningOutcome:id,skill_id,code,statement,statement_marathi,competency,competency_marathi',
+                    'errorType:id,name,name_marathi',
+                ])
                 ->get()
                 ->keyBy('id');
             $questions = collect($questionIds)
@@ -85,6 +92,12 @@ class AssessmentAttemptService
                     'skill_id' => $question->skill_id,
                     'skill_name' => $question->skill->name,
                     'skill_name_marathi' => $question->skill->name_marathi,
+                    'learning_outcome_id' => $question->learningOutcome?->id,
+                    'learning_outcome_code' => $question->learningOutcome?->code,
+                    'learning_outcome_statement' => $question->learningOutcome?->statement,
+                    'learning_outcome_statement_marathi' => $question->learningOutcome?->statement_marathi,
+                    'competency' => $question->learningOutcome?->competency,
+                    'competency_marathi' => $question->learningOutcome?->competency_marathi,
                     'answer' => $evaluation['answer'],
                     'correct_answer' => $evaluation['correct_answer'],
                     'is_correct' => $evaluation['is_correct'],
@@ -111,6 +124,7 @@ class AssessmentAttemptService
             $percentage = $rawMaxScore > 0 ? round(($rawScore / $rawMaxScore) * 100, 2) : 0;
             $comparison = $this->comparison($lockedAttempt, $percentage, $accuracy);
             $skillDiagnosis = $this->skillDiagnosis($responses, $lockedAttempt, $comparison);
+            $learningOutcomeDiagnosis = $this->learningOutcomeDiagnosis($responses, $lockedAttempt);
             $previousBest = TestAttempt::query()
                 ->where('student_id', $lockedAttempt->student_id)
                 ->where('test_id', $lockedAttempt->test_id)
@@ -129,6 +143,7 @@ class AssessmentAttemptService
                     'question_ids' => $questionIds,
                     'correct_count' => $correctCount,
                     'incorrect_count' => $questions->count() - $correctCount,
+                    'learning_outcomes' => $learningOutcomeDiagnosis,
                     'skills' => $skillDiagnosis,
                     'comparison' => $comparison,
                 ],
@@ -148,6 +163,16 @@ class AssessmentAttemptService
             foreach ($skillDiagnosis as $diagnosis) {
                 $this->updateSkillProgress($lockedAttempt, $diagnosis);
             }
+
+            AssessmentAssignment::query()
+                ->whereBelongsTo($lockedAttempt->test)
+                ->whereBelongsTo($lockedAttempt->student)
+                ->where('academic_year_id', $lockedAttempt->academic_year_id)
+                ->update([
+                    'status' => AssessmentAssignment::STATUS_COMPLETED,
+                    'completed_at' => $submittedAt,
+                ]);
+            $this->recommendations->sync($lockedAttempt->student, $lockedAttempt->academicYear);
 
             return $lockedAttempt->fresh(['test.subject', 'answers.question.options']);
         });
@@ -218,6 +243,7 @@ class AssessmentAttemptService
                 'test_id' => $attempt->test_id,
                 'test_type' => $attempt->test->type,
                 'question_id' => $response['question_id'],
+                'learning_outcome_id' => $response['learning_outcome_id'],
                 'answer' => $response['answer'],
                 'correct_answer' => $response['correct_answer'],
             ],
@@ -283,6 +309,81 @@ class AssessmentAttemptService
                         ? round((($accuracy - $preTestScore) / $preTestScore) * 100, 2)
                         : null,
                     'overall_comparison_available' => $comparison['pre_test_accuracy'] !== null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $responses
+     * @return list<array<string, mixed>>
+     */
+    private function learningOutcomeDiagnosis(array $responses, TestAttempt $attempt): array
+    {
+        $preTestOutcomes = collect();
+
+        if ($attempt->test->type === 'post_test') {
+            $preTestAttempt = TestAttempt::query()
+                ->where('student_id', $attempt->student_id)
+                ->where('academic_year_id', $attempt->academic_year_id)
+                ->where('status', 'completed')
+                ->whereHas('test', fn ($query) => $query
+                    ->where('type', 'pre_test')
+                    ->where('subject_id', $attempt->test->subject_id))
+                ->latest('submitted_at')
+                ->first(['diagnosis']);
+            $preTestOutcomes = collect(
+                data_get($preTestAttempt?->diagnosis, 'learning_outcomes', []),
+            )->keyBy('learning_outcome_id');
+        }
+
+        return collect($responses)
+            ->whereNotNull('learning_outcome_id')
+            ->groupBy('learning_outcome_id')
+            ->map(function (Collection $outcomeResponses) use ($attempt, $preTestOutcomes): array {
+                $correctCount = $outcomeResponses->where('is_correct', true)->count();
+                $questionCount = $outcomeResponses->count();
+                $accuracy = round(($correctCount / $questionCount) * 100, 2);
+                $firstResponse = $outcomeResponses->first();
+                $preTestScore = $attempt->test->type === 'pre_test'
+                    ? $accuracy
+                    : data_get($preTestOutcomes->get($firstResponse['learning_outcome_id']), 'accuracy');
+
+                return [
+                    'learning_outcome_id' => $firstResponse['learning_outcome_id'],
+                    'code' => $firstResponse['learning_outcome_code'],
+                    'statement' => $firstResponse['learning_outcome_statement'],
+                    'statement_marathi' => $firstResponse['learning_outcome_statement_marathi'],
+                    'competency' => $firstResponse['competency'],
+                    'competency_marathi' => $firstResponse['competency_marathi'],
+                    'skill_id' => $firstResponse['skill_id'],
+                    'skill_name' => $firstResponse['skill_name'],
+                    'skill_name_marathi' => $firstResponse['skill_name_marathi'],
+                    'question_count' => $questionCount,
+                    'correct_count' => $correctCount,
+                    'incorrect_count' => $questionCount - $correctCount,
+                    'accuracy' => $accuracy,
+                    'classification' => $accuracy >= 80
+                        ? 'strength'
+                        : ($accuracy < 60 ? 'needs_support' : 'developing'),
+                    'errors' => $outcomeResponses
+                        ->whereNotNull('error_type_id')
+                        ->groupBy('error_type_id')
+                        ->map(fn (Collection $errors): array => [
+                            'error_type_id' => $errors->first()['error_type_id'],
+                            'name' => $errors->first()['error_type'],
+                            'name_marathi' => $errors->first()['error_type_marathi'],
+                            'count' => $errors->count(),
+                        ])
+                        ->values()
+                        ->all(),
+                    'pre_test_score' => $preTestScore,
+                    'post_test_score' => $attempt->test->type === 'post_test' ? $accuracy : null,
+                    'percentage_point_improvement' => $attempt->test->type === 'post_test'
+                        && $preTestScore !== null
+                            ? round($accuracy - (float) $preTestScore, 2)
+                            : null,
                 ];
             })
             ->values()

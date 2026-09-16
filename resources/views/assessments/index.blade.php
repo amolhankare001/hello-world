@@ -4,6 +4,7 @@
         @forelse ($tests as $test)
             @php
                 $canStart = $test->in_progress_attempts_count > 0 || $test->student_attempts_count < $test->max_attempts;
+                $assignment = $assignmentsByTest->get($test->id);
             @endphp
             <div class="col-md-6 col-xl-4">
                 <article class="card portal-card h-100">
@@ -12,6 +13,9 @@
                         <h2 class="h4 portal-brand">{{ $test->title_marathi }}</h2>
                         <p class="text-secondary">{{ $test->title }}</p>
                         <div class="small mb-3">{{ $test->subject->name_marathi }} · {{ $test->question_count }} प्रश्न · पातळी {{ $test->difficulty }}</div>
+                        @if ($assignment)
+                            <div class="alert alert-primary py-2 small">मार्गदर्शकाने दिलेली चाचणी · {{ str_replace('_', ' ', $assignment->status) }}</div>
+                        @endif
                         @if ($test->instructions_marathi)<p>{{ $test->instructions_marathi }}</p>@endif
                     </div>
                     <div class="card-footer bg-white border-0 p-4 pt-0">

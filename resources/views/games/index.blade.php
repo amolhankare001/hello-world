@@ -3,7 +3,7 @@
         <div>
             <span class="badge rounded-pill text-bg-primary mb-2">खेळातून शिकूया</span>
             <h1 class="h2 portal-brand mb-1">माझे अध्ययन खेळ</h1>
-            <p class="text-secondary mb-0">योग्य पर्याय पकडा, गुण मिळवा आणि तुमचे कौशल्य वाढवा.</p>
+            <p class="text-secondary mb-0">इयत्ता {{ $gradeLevel }} साठी योग्य पर्याय पकडा, गुण मिळवा आणि कौशल्य वाढवा.</p>
         </div>
         <a class="btn btn-outline-primary" href="{{ route('student.dashboard') }}">माझी प्रगती</a>
     </div>
@@ -31,6 +31,12 @@
                             <span class="badge rounded-pill text-bg-light">
                                 {{ $game->levels->count() }} पातळ्या
                             </span>
+                            @if (data_get($game->configuration, 'grade_min'))
+                                <span class="badge rounded-pill text-bg-light">
+                                    इयत्ता {{ data_get($game->configuration, 'grade_min') }}
+                                    ते {{ data_get($game->configuration, 'grade_max') }}
+                                </span>
+                            @endif
                             <span class="badge rounded-pill text-bg-light">
                                 {{ data_get($firstLevel?->configuration, 'lives', 3) }} संधी
                             </span>

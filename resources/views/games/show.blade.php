@@ -2,6 +2,7 @@
     <div
         class="game-shell"
         data-game-root
+        data-game-code="{{ $gameSession->game->code }}"
         data-state-element="game-state-{{ $gameSession->id }}"
         data-answer-url="{{ route('games.sessions.answer', [$gameSession, '__QUESTION__']) }}"
         data-finish-url="{{ route('games.sessions.finish', $gameSession) }}"
@@ -46,6 +47,7 @@
 
             <div class="game-prompt-wrap">
                 <span class="badge rounded-pill text-bg-light text-primary" data-game-level></span>
+                <p class="game-instructions" data-game-instructions></p>
                 <p class="game-context" data-game-context hidden></p>
                 <div class="game-visual" data-game-visual hidden aria-hidden="true"></div>
                 <button class="btn btn-primary game-listen-button" type="button" data-game-listen hidden>
@@ -53,7 +55,7 @@
                     ऐका
                 </button>
                 <h2 class="game-prompt" data-game-prompt>खेळ तयार होत आहे...</h2>
-                <p class="text-secondary mb-0">योग्य पर्यायाला स्पर्श करा.</p>
+                <p class="text-secondary mb-0" data-game-action-hint>योग्य पर्यायाला स्पर्श करा.</p>
             </div>
 
             <div class="game-feedback" data-game-feedback hidden></div>

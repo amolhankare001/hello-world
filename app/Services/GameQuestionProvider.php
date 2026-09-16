@@ -59,7 +59,11 @@ class GameQuestionProvider
                 'prompt_marathi' => $question['prompt_marathi'],
                 'choices' => $question['choices'],
                 'expected_answer' => ['value' => $question['answer']],
-                'presentation' => $question['presentation'] ?? [],
+                'presentation' => $this->presentation(
+                    $game,
+                    $question['presentation'] ?? [],
+                    $question['prompt_marathi'],
+                ),
                 'difficulty' => $level->difficulty,
                 'max_score' => $maxScore,
                 'response_time_limit_ms' => $responseTimeLimit * 1000,
@@ -116,6 +120,7 @@ class GameQuestionProvider
                 'choices' => $choices,
                 'answer' => $target['value'],
                 'presentation' => [
+                    'interaction' => 'catch',
                     'visual_theme' => data_get($game->configuration, 'visual_theme'),
                 ],
             ];
@@ -152,9 +157,15 @@ class GameQuestionProvider
             throw new InvalidArgumentException("Game [{$game->code}] has an invalid question bank.");
         }
 
-        return collect(range(1, $questionCount))
-            ->map(function () use ($pool): array {
-                $question = $pool->random();
+        $selectedQuestions = collect();
+
+        while ($selectedQuestions->count() < $questionCount) {
+            $selectedQuestions->push(...$pool->shuffle());
+        }
+
+        return $selectedQuestions
+            ->take($questionCount)
+            ->map(function (array $question): array {
                 $choices = collect($question['choices'])
                     ->filter(fn (mixed $choice): bool => is_array($choice)
                         && isset($choice['value'], $choice['label']))
@@ -237,7 +248,14 @@ class GameQuestionProvider
             $answer,
             max(1, $answer - 8),
             $answer + 8,
-            ['visual_theme' => 'train'],
+            [
+                'interaction' => 'number_train',
+                'sequence' => array_map(
+                    fn (int|string $value): string => is_int($value) ? $this->marathiNumber($value) : $value,
+                    $sequence,
+                ),
+                'visual_theme' => 'train',
+            ],
         );
     }
 
@@ -261,7 +279,12 @@ class GameQuestionProvider
             'prompt_marathi' => "यापैकी {$directionMarathi} अंक कोणता?",
             'choices' => $this->numberChoices([$first, $second]),
             'answer' => (string) $answer,
-            'presentation' => ['visual' => "{$this->marathiNumber($first)}  ?  {$this->marathiNumber($second)}"],
+            'presentation' => [
+                'comparison_direction' => $findLarger ? 'larger' : 'smaller',
+                'interaction' => 'number_comparison',
+                'numbers' => [$this->marathiNumber($first), $this->marathiNumber($second)],
+                'visual' => "{$this->marathiNumber($first)}  ?  {$this->marathiNumber($second)}",
+            ],
         ];
     }
 
@@ -290,7 +313,12 @@ class GameQuestionProvider
             $answer,
             0,
             max(1000, $answer + 100),
-            ['visual_theme' => 'place_value_house'],
+            [
+                'interaction' => 'place_value_house',
+                'number' => $this->marathiNumber($number),
+                'target_digit' => $this->marathiNumber($digit),
+                'visual_theme' => 'place_value_house',
+            ],
             collect($places)->map(fn (int $candidate): int => $digit * $candidate)->all(),
         );
     }
@@ -311,6 +339,9 @@ class GameQuestionProvider
             0,
             $answer + 10,
             [
+                'interaction' => 'number_line',
+                'jump' => $jump,
+                'start' => $start,
                 'visual' => "{$this->marathiNumber($start)}  +{$this->marathiNumber($jump)}  →  ?",
                 'visual_theme' => 'number_line',
             ],
@@ -337,7 +368,12 @@ class GameQuestionProvider
             $answer,
             max(0, $answer - 15),
             $answer + 15,
-            ['visual_theme' => 'addition_adventure'],
+            [
+                'interaction' => 'arithmetic_adventure',
+                'operands' => [$first, $second],
+                'operator' => '+',
+                'visual_theme' => 'addition_adventure',
+            ],
         );
     }
 
@@ -361,7 +397,12 @@ class GameQuestionProvider
             $answer,
             max(0, $answer - 12),
             $answer + 12,
-            ['visual_theme' => 'subtraction_adventure'],
+            [
+                'interaction' => 'arithmetic_adventure',
+                'operands' => [$first, $second],
+                'operator' => '−',
+                'visual_theme' => 'subtraction_adventure',
+            ],
         );
     }
 
@@ -399,6 +440,9 @@ class GameQuestionProvider
                 ->all(),
             'answer' => $answer,
             'presentation' => [
+                'denominator' => $denominator,
+                'interaction' => 'fraction_pizza',
+                'numerator' => $numerator,
                 'visual' => str_repeat('●', $numerator).str_repeat('○', $denominator - $numerator),
                 'visual_theme' => 'fraction_pizza',
             ],
@@ -427,7 +471,15 @@ class GameQuestionProvider
             $answer,
             max(1, $answer - 20),
             $answer + 20,
-            ['visual' => str_repeat($item['visual'], $quantity), 'visual_theme' => 'shop'],
+            [
+                'interaction' => 'shopping',
+                'item_name' => $item['name_marathi'],
+                'item_visual' => $item['visual'],
+                'price' => $price,
+                'quantity' => $quantity,
+                'visual' => str_repeat($item['visual'], $quantity),
+                'visual_theme' => 'shop',
+            ],
         );
     }
 
@@ -446,7 +498,12 @@ class GameQuestionProvider
             $answer,
             max(0, $answer - 20),
             $answer + 20,
-            ['visual_theme' => 'space_mission'],
+            [
+                'columns' => $second,
+                'interaction' => 'multiplication_array',
+                'rows' => $first,
+                'visual_theme' => 'space_mission',
+            ],
         );
     }
 
@@ -465,8 +522,100 @@ class GameQuestionProvider
             $quotient,
             max(1, $quotient - 8),
             $quotient + 8,
-            ['visual_theme' => 'sharing'],
+            [
+                'groups' => $divisor,
+                'interaction' => 'division_sharing',
+                'objects' => $dividend,
+                'visual_theme' => 'sharing',
+            ],
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $presentation
+     * @return array<string, mixed>
+     */
+    private function presentation(
+        Game $game,
+        array $presentation,
+        string $promptMarathi,
+    ): array {
+        $interaction = match ($game->code) {
+            'MATRA_BALLOONS' => 'matra_balloons',
+            'BUILD_THE_WORD' => 'word_builder',
+            'PICTURE_WORD_MATCH' => 'picture_match',
+            'WORD_TRAIN' => 'word_train',
+            'SENTENCE_MATCH' => 'sentence_match',
+            'LISTEN_AND_SELECT' => 'listen_and_select',
+            'FIND_CORRECT_WORD' => 'correct_word',
+            'WORD_ORDER' => 'word_order',
+            'READING_CHALLENGE' => 'reading_challenge',
+            'PATTERN_CODE_BREAKER' => 'pattern_lab',
+            'DECIMAL_MARKET' => 'decimal_lab',
+            'FACTOR_MULTIPLE_LAB' => 'factor_lab',
+            'INTEGER_ELEVATOR' => 'integer_lab',
+            'RATIO_RECIPE' => 'ratio_lab',
+            'PERCENTAGE_TARGET' => 'percentage_lab',
+            'ALGEBRA_BALANCE' => 'algebra_lab',
+            'ANGLE_DETECTIVE' => 'angle_lab',
+            'PERIMETER_AREA_BUILDER' => 'measurement_lab',
+            'DATA_GRAPH_CHALLENGE' => 'data_lab',
+            'CLOCK_CALENDAR_QUEST' => 'time_lab',
+            'SYNONYM_PAIRS' => 'synonym_pairs',
+            'ANTONYM_PAIRS' => 'antonym_pairs',
+            'GENDER_NUMBER_SORT' => 'grammar_sort',
+            'WORD_CLASS_DETECTIVE' => 'word_class',
+            'TENSE_TRAVEL' => 'tense_timeline',
+            'IDIOM_CONTEXT' => 'context_clue',
+            'PUNCTUATION_RESCUE' => 'punctuation',
+            'POETRY_EXPLORER' => 'poetry_reading',
+            default => $presentation['interaction'] ?? $game->engine_key,
+        };
+
+        $presentation['interaction'] = $interaction;
+        $presentation['visual_theme'] ??= (string) data_get(
+            $game->configuration,
+            'visual_theme',
+            $interaction,
+        );
+
+        if ($interaction === 'word_builder') {
+            $presentation['tokens'] = $this->wordBuilderTokens($promptMarathi);
+        }
+
+        if ($interaction === 'word_order') {
+            $presentation['tokens'] = $this->wordOrderTokens($promptMarathi);
+        }
+
+        return $presentation;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function wordBuilderTokens(string $promptMarathi): array
+    {
+        $parts = preg_split('/\s+यांपासून/u', $promptMarathi, 2);
+
+        return collect(preg_split('/\s*\+\s*/u', $parts[0] ?? '') ?: [])
+            ->filter()
+            ->shuffle()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function wordOrderTokens(string $promptMarathi): array
+    {
+        $tokenText = preg_replace('/^शब्द लावा:\s*/u', '', $promptMarathi) ?? '';
+
+        return collect(preg_split('/\s*\/\s*/u', $tokenText) ?: [])
+            ->filter()
+            ->shuffle()
+            ->values()
+            ->all();
     }
 
     /**

@@ -77,6 +77,43 @@
         </div>
     </div>
 
+    <section class="card portal-card mb-4" aria-labelledby="outcomes-heading">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-start gap-3">
+            <div><h2 class="h3 mb-1" id="outcomes-heading">इयत्ता चौथी अध्ययन निष्पत्ती</h2><p class="text-secondary mb-0">पूर्व चाचणीपासून सध्याच्या प्रभुत्वापर्यंतची प्रगती.</p></div>
+            <a class="btn btn-outline-primary" href="{{ route('assessments.index') }}">चाचणी पहा</a>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @forelse ($classLearningOutcomes as $entry)
+                    @php
+                        $outcome = $entry['outcome'];
+                        $progress = $entry['progress'];
+                        $mastery = (float) ($progress?->mastery_score ?? 0);
+                    @endphp
+                    <div class="col-md-6">
+                        <article class="border rounded-4 p-3 h-100">
+                            <div class="d-flex justify-content-between gap-3"><span class="badge text-bg-light">{{ $outcome->subject->name_marathi }}</span><strong>{{ $progress ? number_format($mastery, 0).'%' : 'मोजणी बाकी' }}</strong></div>
+                            <h3 class="h6 mt-2">{{ $outcome->statement_marathi }}</h3>
+                            <div class="small text-secondary mb-2">{{ $outcome->competency_marathi }}</div>
+                            @if ($progress)
+                                <div class="progress" role="progressbar" aria-label="{{ $outcome->code }}" aria-valuenow="{{ $mastery }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar {{ $mastery >= 80 ? 'bg-success' : ($mastery >= 60 ? 'bg-primary' : 'bg-warning') }}" style="width: {{ $mastery }}%"></div></div>
+                            @endif
+                            <div class="small mt-2">
+                                पूर्व चाचणी: {{ $progress?->pre_test_score !== null ? number_format((float) $progress->pre_test_score, 0).'%' : 'बाकी' }}
+                                · उत्तर चाचणी: {{ $progress?->post_test_score !== null ? number_format((float) $progress->post_test_score, 0).'%' : 'बाकी' }}
+                                @if ($progress?->improvement !== null)
+                                    · सुधारणा: {{ number_format((float) $progress->improvement, 0) }} गुण
+                                @endif
+                            </div>
+                        </article>
+                    </div>
+                @empty
+                    <div class="col-12"><p class="text-secondary mb-0">अध्ययन निष्पत्तीची माहिती लवकरच दिसेल.</p></div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+
     <section class="mb-4" aria-labelledby="recommended-heading">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="h3 mb-0" id="recommended-heading">आजचा माझा सराव</h2>
@@ -133,6 +170,9 @@
                 @if ($todayGame)
                     <h3 class="h5">{{ $todayGame->title_marathi ?: $todayGame->title }}</h3>
                     <p class="text-secondary">{{ $todayGame->description_marathi ?: $todayGame->description }}</p>
+                    @if ($studentRecommendations->contains(fn ($recommendation) => $todayGame->skills->contains('id', $recommendation->skill_id)))
+                        <div class="alert alert-warning small">पूर्व चाचणीत मदत आवश्यक असलेल्या {{ $todayGame->skills->pluck('name_marathi')->implode(', ') }} कौशल्यासाठी हा खेळ निवडला आहे.</div>
+                    @endif
                     <form class="mt-auto" method="POST" action="{{ route('games.start', $todayGame) }}">
                         @csrf
                         <button class="btn btn-outline-primary w-100 student-touch-target" type="submit">खेळ सुरू करा</button>

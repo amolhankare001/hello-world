@@ -37,6 +37,14 @@ class Game extends Model
         return $this->hasMany(GameSession::class);
     }
 
+    public function supportsGrade(int $gradeLevel): bool
+    {
+        $minimumGrade = (int) data_get($this->configuration, 'grade_min', 1);
+        $maximumGrade = (int) data_get($this->configuration, 'grade_max', 12);
+
+        return $gradeLevel >= $minimumGrade && $gradeLevel <= $maximumGrade;
+    }
+
     public function getRouteKeyName(): string
     {
         return 'code';

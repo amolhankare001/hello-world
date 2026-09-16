@@ -22,6 +22,8 @@ class StudentGameController extends Controller
         /** @var User $user */
         $user = $request->user();
         $student = $user->student;
+        $enrollment = $this->currentEnrollment($student);
+        $gradeLevel = $enrollment->division->schoolClass->grade_level;
         $games = Game::query()
             ->where('status', 'published')
             ->whereHas('levels')
@@ -32,7 +34,9 @@ class StudentGameController extends Controller
             ])
             ->orderBy('title_marathi')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->filter(fn (Game $game): bool => $game->supportsGrade($gradeLevel))
+            ->values();
         $recentSessions = $student->gameSessions()
             ->where('status', 'completed')
             ->with(['game:id,code,title,title_marathi', 'result'])
@@ -40,7 +44,7 @@ class StudentGameController extends Controller
             ->limit(10)
             ->get();
 
-        return view('games.index', compact('games', 'recentSessions'));
+        return view('games.index', compact('games', 'gradeLevel', 'recentSessions'));
     }
 
     public function start(
@@ -52,6 +56,7 @@ class StudentGameController extends Controller
         $user = $request->user();
         $student = $user->student;
         $enrollment = $this->currentEnrollment($student);
+        abort_unless($game->supportsGrade($enrollment->division->schoolClass->grade_level), 404);
         $session = $gameSessionService->start($student, $enrollment->academicYear, $game);
 
         return redirect()->route('games.sessions.show', $session);
@@ -113,7 +118,7 @@ class StudentGameController extends Controller
     {
         return $student->enrollments()
             ->where('status', 'active')
-            ->with('academicYear')
+            ->with(['academicYear', 'division.schoolClass'])
             ->latest('enrolled_on')
             ->firstOrFail();
     }
